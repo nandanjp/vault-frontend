@@ -13,6 +13,7 @@ import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@
 import { useDeleteMedia } from "@/hooks/use-media"
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
 import gsap from "@/lib/gsap"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 const LIMIT = 20
 
@@ -305,6 +306,8 @@ function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
         src={img.url}
         alt={img.filename}
         fill
+        placeholder="blur"
+        blurDataURL={shimmerPlaceholder}
         className="object-cover transition-transform duration-500 hover:scale-105"
         unoptimized
       />

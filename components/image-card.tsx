@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import type { Image as ImageModel } from "@/lib/api"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 interface ImageCardProps {
   image: ImageModel
@@ -47,21 +48,15 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
     >
       {isReady && image.url ? (
         <>
-          {/* Blurred placeholder — same URL, browser deduplicates the request */}
-          <div
-            className={cn(
-              "absolute inset-0 scale-110 bg-cover bg-center transition-opacity duration-300",
-              imgLoaded ? "opacity-0" : "opacity-100"
-            )}
-            style={{ backgroundImage: `url(${image.url})`, filter: "blur(18px)" }}
-          />
           <Image
             src={image.url}
             alt={image.filename}
             width={image.width ?? 400}
             height={image.height ?? 400}
+            placeholder="blur"
+            blurDataURL={shimmerPlaceholder}
             className={cn(
-              "h-full w-full object-cover transition-all duration-300 group-hover:scale-105",
+              "h-full w-full object-cover transition-opacity duration-300 group-hover:scale-105",
               imgLoaded ? "opacity-100" : "opacity-0"
             )}
             onLoad={() => setImgLoaded(true)}

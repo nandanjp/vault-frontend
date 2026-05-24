@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import type { Image as ImageModel } from "@/lib/api"
 import gsap from "@/lib/gsap"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 const AUTOPLAY_MS = 5000
 
@@ -103,6 +104,8 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}
+                placeholder="blur"
+                blurDataURL={shimmerPlaceholder}
                 className="max-h-full max-w-full object-contain drop-shadow-2xl select-none"
                 unoptimized
                 priority={i === 0}

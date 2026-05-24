@@ -13,6 +13,7 @@ import { useGallery } from "@/hooks/use-gallery"
 import { useAlbums } from "@/hooks/use-albums"
 import { useFavourites } from "@/hooks/use-favourites"
 import gsap from "@/lib/gsap"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 export default function DashboardPage() {
   const { data: gallery, isLoading: galleryLoading } = useGallery()
@@ -125,6 +126,8 @@ function FavStrip({ image }: { image: { id: string; url?: string; filename: stri
           src={image.url}
           alt={image.filename}
           fill
+          placeholder="blur"
+          blurDataURL={shimmerPlaceholder}
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           unoptimized
         />
@@ -145,6 +148,8 @@ function AlbumCard({ album }: { album: { id: string; name: string; image_count: 
             src={album.cover_url}
             alt={album.name}
             fill
+            placeholder="blur"
+            blurDataURL={shimmerPlaceholder}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             unoptimized
           />

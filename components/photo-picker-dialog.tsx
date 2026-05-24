@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useMedia } from "@/hooks/use-media"
 import { useAddToAlbum } from "@/hooks/use-albums"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 const LIMIT = 24
 
@@ -105,6 +106,8 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
                   src={img.url!}
                   alt={img.filename}
                   fill
+                  placeholder="blur"
+                  blurDataURL={shimmerPlaceholder}
                   className="object-cover"
                   unoptimized
                 />

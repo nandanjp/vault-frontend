@@ -6,6 +6,7 @@ import { FolderOpen, Check } from "lucide-react"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
 import type { Album } from "@/lib/api"
+import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 interface AlbumPickerDialogProps {
   open: boolean
@@ -56,7 +57,7 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
             >
               <div className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
                 {album.cover_url ? (
-                  <Image src={album.cover_url} alt={album.name} fill className="object-cover" unoptimized />
+                  <Image src={album.cover_url} alt={album.name} fill placeholder="blur" blurDataURL={shimmerPlaceholder} className="object-cover" unoptimized />
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <FolderOpen className="size-5 text-muted-foreground/40" />
