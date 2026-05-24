@@ -123,10 +123,10 @@ export default function PhotosPage() {
                 {image.status === "ready" && (
                   <button
                     onClick={() => setAddToAlbumTarget(image.id)}
-                    className="absolute bottom-2 left-2 hidden items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm transition-colors hover:bg-black/80 group-hover/wrap:flex"
+                    title="Add to album"
+                    className="absolute left-2 top-2 z-10 hidden size-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/75 group-hover/wrap:flex"
                   >
-                    <FolderPlus className="size-3" />
-                    Add to album
+                    <FolderPlus className="size-3.5" />
                   </button>
                 )}
               </div>

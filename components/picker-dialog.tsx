@@ -12,24 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-// Generic searchable picker dialog shell.
-// Caller controls search state and provides filtered items.
-// Footer slot accepts a confirm button or any additional actions.
-
 export interface PickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
+  description?: string
   searchPlaceholder?: string
-  emptyText?: string
   isLoading?: boolean
   search: string
   onSearchChange: (q: string) => void
-  // Pagination
   page?: number
   totalPages?: number
   onPageChange?: (page: number) => void
-  // Footer (confirm button, counts, etc.)
   footer?: React.ReactNode
   children: React.ReactNode
 }
@@ -38,8 +32,8 @@ export function PickerDialog({
   open,
   onOpenChange,
   title,
+  description,
   searchPlaceholder = "Search…",
-  emptyText = "Nothing found.",
   isLoading,
   search,
   onSearchChange,
@@ -55,18 +49,26 @@ export function PickerDialog({
     if (open) setTimeout(() => inputRef.current?.focus(), 80)
   }, [open])
 
+  const hasPagination = onPageChange && totalPages && totalPages > 1
+  const hasFooter = hasPagination || footer
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogClose />
+      <DialogContent className="max-w-lg gap-0 p-0">
+        {/* Header — no hard border, just generous padding */}
+        <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-5">
+          <div className="min-w-0">
+            <DialogTitle className="text-base">{title}</DialogTitle>
+            {description && (
+              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+          <DialogClose className="mt-0.5 shrink-0" />
         </div>
 
-        {/* Search */}
-        <div className="border-b border-border px-3 py-2">
-          <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
+        {/* Search — floating inside content area */}
+        <div className="px-5 pb-3">
+          <div className="flex items-center gap-2.5 rounded-xl bg-muted/60 px-3.5 py-2.5 ring-1 ring-border/50">
             <Search className="size-3.5 shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
@@ -79,23 +81,19 @@ export function PickerDialog({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-3">
-          {isLoading ? (
-            <PickerSkeleton />
-          ) : (
-            children
-          )}
+        <div className="flex-1 overflow-y-auto px-5 pb-3">
+          {isLoading ? <PickerSkeleton /> : children}
         </div>
 
-        {/* Pagination + footer */}
-        {(onPageChange && totalPages && totalPages > 1) || footer ? (
-          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
-            {onPageChange && totalPages && totalPages > 1 ? (
+        {/* Footer — subtle top separation only when content exists */}
+        {hasFooter && (
+          <div className="flex items-center justify-between gap-3 rounded-b-2xl bg-muted/40 px-5 py-3.5">
+            {hasPagination ? (
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onPageChange(Math.max(1, (page ?? 1) - 1))}
+                  onClick={() => onPageChange!(Math.max(1, (page ?? 1) - 1))}
                   disabled={page === 1}
                 >
                   Previous
@@ -106,7 +104,7 @@ export function PickerDialog({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onPageChange(Math.min(totalPages, (page ?? 1) + 1))}
+                  onClick={() => onPageChange!(Math.min(totalPages!, (page ?? 1) + 1))}
                   disabled={page === totalPages}
                 >
                   Next
@@ -115,7 +113,7 @@ export function PickerDialog({
             ) : <div />}
             {footer}
           </div>
-        ) : null}
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -123,9 +121,9 @@ export function PickerDialog({
 
 function PickerSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-lg px-2 py-2">
+        <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
           <Skeleton className="size-10 shrink-0 rounded-lg" />
           <div className="flex-1 space-y-1.5">
             <Skeleton className="h-3.5 w-3/4" />
@@ -137,10 +135,9 @@ function PickerSkeleton() {
   )
 }
 
-// Empty state used inside PickerDialog content
 export function PickerEmpty({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="flex flex-col items-center justify-center py-10 text-center">
       <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Image from "next/image"
-import { FolderOpen } from "lucide-react"
+import { FolderOpen, Check } from "lucide-react"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
 import type { Album } from "@/lib/api"
@@ -28,15 +28,16 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
   const handleSelect = (album: Album) => {
     addToAlbum.mutate(
       { albumId: album.id, imageIds: [imageId] },
-      { onSuccess: () => onOpenChange(false) }
+      { onSuccess: () => { setSearch(""); onOpenChange(false) } }
     )
   }
 
   return (
     <PickerDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(v) => { if (!v) setSearch(""); onOpenChange(v) }}
       title="Add to album"
+      description="Choose an album for this photo."
       searchPlaceholder="Search albums…"
       isLoading={isLoading}
       search={search}
@@ -51,9 +52,9 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
               key={album.id}
               onClick={() => handleSelect(album)}
               disabled={addToAlbum.isPending}
-              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
             >
-              <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+              <div className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
                 {album.cover_url ? (
                   <Image src={album.cover_url} alt={album.name} fill className="object-cover" unoptimized />
                 ) : (
@@ -64,10 +65,11 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{album.name}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {album.image_count} {album.image_count === 1 ? "photo" : "photos"}
                 </p>
               </div>
+              <Check className="size-4 shrink-0 text-muted-foreground/30" />
             </button>
           ))}
         </div>

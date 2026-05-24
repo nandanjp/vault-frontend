@@ -4,12 +4,12 @@ import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, ImagePlus } from "lucide-react"
+import { ArrowLeft, ImagePlus, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAlbums, useAlbumImages, useRemoveFromAlbum } from "@/hooks/use-albums"
+import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@/hooks/use-albums"
 import { useDeleteMedia } from "@/hooks/use-media"
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
 import gsap from "@/lib/gsap"
@@ -25,10 +25,28 @@ export default function AlbumDetailPage() {
   const { data: heroData } = useAlbumImages(id, 1, 5)
   const removeFromAlbum = useRemoveFromAlbum()
   const deleteMedia = useDeleteMedia()
+  const updateAlbum = useUpdateAlbum()
   const [addPhotosOpen, setAddPhotosOpen] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState("")
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
   const heroImages = (heroData?.items.filter((i) => i.status === "ready" && i.url) ?? []) as BentoImg[]
+
+  const startEdit = () => {
+    setNameValue(album?.name ?? "")
+    setEditingName(true)
+    setTimeout(() => nameInputRef.current?.select(), 0)
+  }
+
+  const saveEdit = () => {
+    const trimmed = nameValue.trim()
+    if (trimmed && trimmed !== album?.name) {
+      updateAlbum.mutate({ id, name: trimmed })
+    }
+    setEditingName(false)
+  }
 
   // Animated photo counter
   const countRef = useRef<HTMLSpanElement>(null)
@@ -47,29 +65,84 @@ export default function AlbumDetailPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link href="/albums" className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}>
-            <ArrowLeft className="size-4" />
-          </Link>
-          <div className="min-w-0">
-            {album
-              ? <h1 className="truncate text-2xl font-semibold tracking-tight">{album.name}</h1>
-              : <Skeleton className="h-7 w-48" />}
-            {data && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                <span ref={countRef}>{data.total}</span>{" "}
-                {data.total === 1 ? "photo" : "photos"}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Button size="sm" className="shrink-0 gap-2" onClick={() => setAddPhotosOpen(true)}>
+      {/* Breadcrumb */}
+      <div className="mb-8 flex items-center justify-between">
+        <Link
+          href="/albums"
+          className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          Albums
+        </Link>
+        <Button size="sm" className="gap-2" onClick={() => setAddPhotosOpen(true)}>
           <ImagePlus className="size-4" />
           Add photos
         </Button>
+      </div>
+
+      {/* Hero title — Notion-style large editable heading */}
+      <div className="mb-10">
+        {album ? (
+          <div className="group/title">
+            {editingName ? (
+              <input
+                ref={nameInputRef}
+                autoFocus
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                onBlur={saveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit()
+                  if (e.key === "Escape") setEditingName(false)
+                }}
+                className="w-full bg-transparent text-5xl font-bold tracking-tight outline-none sm:text-6xl border-b-2 border-primary pb-1 caret-primary"
+              />
+            ) : (
+              <h1
+                onClick={startEdit}
+                title="Click to rename"
+                className="cursor-text text-5xl font-bold tracking-tight sm:text-6xl leading-tight hover:opacity-80 transition-opacity"
+              >
+                {album.name}
+              </h1>
+            )}
+            <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
+              {data && (
+                <span>
+                  <span ref={countRef}>{data.total}</span>{" "}
+                  {data.total === 1 ? "photo" : "photos"}
+                </span>
+              )}
+              {album.created_at && (
+                <>
+                  <span className="size-1 rounded-full bg-muted-foreground/40 inline-block" />
+                  <span>
+                    Created{" "}
+                    {new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(
+                      new Date(album.created_at)
+                    )}
+                  </span>
+                </>
+              )}
+              {!editingName && (
+                <>
+                  <span className="size-1 rounded-full bg-muted-foreground/40 inline-block" />
+                  <button
+                    onClick={startEdit}
+                    className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                  >
+                    Rename
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Skeleton className="h-14 w-72" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        )}
       </div>
 
       {/* Bento hero — first 5 images */}

@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useMediaItem, useDeleteMedia } from "@/hooks/use-media"
 import { useToggleFavourite } from "@/hooks/use-favourites"
-import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
+import { useAlbums } from "@/hooks/use-albums"
+import { AlbumPickerDialog } from "@/components/album-picker-dialog"
 import gsap from "@/lib/gsap"
 
 function formatBytes(n: number) {
@@ -47,9 +48,8 @@ export default function ImageDetailPage() {
   const deleteMedia = useDeleteMedia()
   const toggleFavourite = useToggleFavourite()
   const { data: albums } = useAlbums()
-  const addToAlbum = useAddToAlbum()
   const [imgLoaded, setImgLoaded] = useState(false)
-  const [albumPopoverOpen, setAlbumPopoverOpen] = useState(false)
+  const [albumDialogOpen, setAlbumDialogOpen] = useState(false)
   const heartBtnRef = useRef<HTMLButtonElement>(null)
 
   const handleFavourite = () => {
@@ -135,37 +135,22 @@ export default function ImageDetailPage() {
 
             {/* Add to album */}
             {image.status === "ready" && albums && albums.length > 0 && (
-              <div className="relative">
+              <>
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() => setAlbumPopoverOpen((v) => !v)}
+                  onClick={() => setAlbumDialogOpen(true)}
                 >
                   <FolderPlus className="size-4" />
                   Add to album
                 </Button>
-                {albumPopoverOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setAlbumPopoverOpen(false)} />
-                    <div className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-lg">
-                      <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select album</p>
-                      {albums.map((album) => (
-                        <button
-                          key={album.id}
-                          onClick={() => {
-                            addToAlbum.mutate({ albumId: album.id, imageIds: [id] })
-                            setAlbumPopoverOpen(false)
-                          }}
-                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
-                        >
-                          <span className="truncate">{album.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                <AlbumPickerDialog
+                  open={albumDialogOpen}
+                  onOpenChange={setAlbumDialogOpen}
+                  imageId={id}
+                />
+              </>
             )}
 
             {image.status === "ready" && image.url && (
