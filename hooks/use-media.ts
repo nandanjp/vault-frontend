@@ -2,17 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { apiFetch } from "@/lib/client-fetch"
 import type { Image, ImagePage } from "@/lib/api"
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init)
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error ?? res.statusText)
-  }
-  if (res.status === 204) return undefined as T
-  return res.json()
-}
 
 export function useMediaItem(id: string) {
   return useQuery<Image>({

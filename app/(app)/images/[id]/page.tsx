@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Trash2, AlertCircle, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, Trash2, AlertCircle, Loader2, Heart, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,6 +20,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useMediaItem, useDeleteMedia } from "@/hooks/use-media"
+import { useToggleFavourite } from "@/hooks/use-favourites"
+import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`
@@ -42,7 +44,11 @@ export default function ImageDetailPage() {
   const router = useRouter()
   const { data: image, isLoading, isError } = useMediaItem(id)
   const deleteMedia = useDeleteMedia()
+  const toggleFavourite = useToggleFavourite()
+  const { data: albums } = useAlbums()
+  const addToAlbum = useAddToAlbum()
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [albumPopoverOpen, setAlbumPopoverOpen] = useState(false)
 
   const handleDelete = () => {
     deleteMedia.mutate(id, {
@@ -79,6 +85,55 @@ export default function ImageDetailPage() {
 
         {!isLoading && image && (
           <div className="flex shrink-0 items-center gap-2">
+            {/* Favourite toggle */}
+            {image.status === "ready" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn("gap-2", image.is_favourited && "border-rose-400/60 text-rose-500 hover:text-rose-500")}
+                onClick={() => toggleFavourite.mutate({ id, isFav: !!image.is_favourited })}
+                disabled={toggleFavourite.isPending}
+              >
+                <Heart className={cn("size-4", image.is_favourited && "fill-rose-500")} />
+                {image.is_favourited ? "Favourited" : "Favourite"}
+              </Button>
+            )}
+
+            {/* Add to album */}
+            {image.status === "ready" && albums && albums.length > 0 && (
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setAlbumPopoverOpen((v) => !v)}
+                >
+                  <FolderPlus className="size-4" />
+                  Add to album
+                </Button>
+                {albumPopoverOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setAlbumPopoverOpen(false)} />
+                    <div className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-lg">
+                      <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select album</p>
+                      {albums.map((album) => (
+                        <button
+                          key={album.id}
+                          onClick={() => {
+                            addToAlbum.mutate({ albumId: album.id, imageIds: [id] })
+                            setAlbumPopoverOpen(false)
+                          }}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
+                        >
+                          <span className="truncate">{album.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {image.status === "ready" && image.url && (
               <a
                 href={image.url}

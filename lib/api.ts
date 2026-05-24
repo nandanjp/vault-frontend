@@ -69,9 +69,22 @@ export type Image = {
   width?: number
   height?: number
   status: ImageStatus
+  is_favourited?: boolean
   created_at: string
   updated_at: string
   url?: string
+}
+
+export type Album = {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  cover_image_id?: string
+  image_count: number
+  cover_url?: string
+  created_at: string
+  updated_at: string
 }
 
 export type ImagePage = {
@@ -129,4 +142,57 @@ export const backendApi = {
       { method: "DELETE" },
       token
     ),
+
+  getGallery: (token: string) =>
+    request<{ items: Image[] }>(`${BACKEND_URL}/api/gallery`, {}, token),
+
+  listAlbums: (token: string) =>
+    request<{ items: Album[] }>(`${BACKEND_URL}/api/albums`, {}, token),
+
+  createAlbum: (token: string, name: string, description?: string) =>
+    request<Album>(
+      `${BACKEND_URL}/api/albums`,
+      { method: "POST", body: JSON.stringify({ name, description }) },
+      token
+    ),
+
+  updateAlbum: (token: string, id: string, name: string, description?: string) =>
+    request<Album>(
+      `${BACKEND_URL}/api/albums/${id}`,
+      { method: "PATCH", body: JSON.stringify({ name, description }) },
+      token
+    ),
+
+  deleteAlbum: (token: string, id: string) =>
+    request<void>(
+      `${BACKEND_URL}/api/albums/${id}`,
+      { method: "DELETE" },
+      token
+    ),
+
+  listAlbumImages: (token: string, id: string, page = 1, limit = 20) =>
+    request<ImagePage>(`${BACKEND_URL}/api/albums/${id}/images?page=${page}&limit=${limit}`, {}, token),
+
+  addAlbumImages: (token: string, albumId: string, imageIds: string[]) =>
+    request<void>(
+      `${BACKEND_URL}/api/albums/${albumId}/images`,
+      { method: "POST", body: JSON.stringify({ image_ids: imageIds }) },
+      token
+    ),
+
+  removeAlbumImage: (token: string, albumId: string, imageId: string) =>
+    request<void>(
+      `${BACKEND_URL}/api/albums/${albumId}/images/${imageId}`,
+      { method: "DELETE" },
+      token
+    ),
+
+  listFavourites: (token: string, page = 1, limit = 20) =>
+    request<ImagePage>(`${BACKEND_URL}/api/favourites?page=${page}&limit=${limit}`, {}, token),
+
+  addFavourite: (token: string, id: string) =>
+    request<void>(`${BACKEND_URL}/api/favourites/${id}`, { method: "POST" }, token),
+
+  removeFavourite: (token: string, id: string) =>
+    request<void>(`${BACKEND_URL}/api/favourites/${id}`, { method: "DELETE" }, token),
 }

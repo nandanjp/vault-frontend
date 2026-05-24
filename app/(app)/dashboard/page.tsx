@@ -1,119 +1,200 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useEffect } from "react"
 import Link from "next/link"
-import { Upload, Images } from "lucide-react"
+import Image from "next/image"
+import { Upload, FolderOpen, Heart, Images, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
-import { useMedia, useDeleteMedia } from "@/hooks/use-media"
-
-const LIMIT = 20
+import { buttonVariants } from "@/components/ui/button"
+import { ImageCardSkeleton } from "@/components/image-card"
+import { GalleryCarousel } from "@/components/gallery-carousel"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useGallery } from "@/hooks/use-gallery"
+import { useAlbums } from "@/hooks/use-albums"
+import { useFavourites } from "@/hooks/use-favourites"
+import gsap from "gsap"
 
 export default function DashboardPage() {
-  const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useMedia(page, LIMIT)
-  const deleteMedia = useDeleteMedia()
+  const { data: gallery, isLoading: galleryLoading } = useGallery()
+  const { data: albums, isLoading: albumsLoading } = useAlbums()
+  const { data: favourites, isLoading: favsLoading } = useFavourites(1, 8)
 
-  const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
-  const readyCount = data?.items.filter((i) => i.status === "ready").length ?? 0
-  const pendingCount = data?.items.filter(
-    (i) => i.status === "pending" || i.status === "processing"
-  ).length ?? 0
+  const hasGallery = !galleryLoading && gallery && gallery.length > 0
+  const hasAlbums = !albumsLoading && albums && albums.length > 0
+  const hasFavs = !favsLoading && favourites && favourites.items.length > 0
+  const isEmpty = !galleryLoading && !albumsLoading && !favsLoading
+    && !hasGallery && !hasAlbums && !hasFavs
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Your images</h1>
-          {data && data.total > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {data.total} {data.total === 1 ? "image" : "images"}
-              {pendingCount > 0 && (
-                <span className="ml-2 text-amber-600 dark:text-amber-400">
-                  · {pendingCount} processing
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-        <Link href="/upload" className={cn(buttonVariants({ size: "sm" }), "shrink-0 gap-2")}>
-          <Upload className="size-4" />
-          Upload
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6">
+      {/* Gallery carousel */}
+      {galleryLoading && (
+        <Skeleton className="h-[480px] w-full rounded-2xl" />
+      )}
+      {hasGallery && <GalleryCarousel images={gallery!} />}
+
+      {/* Favourites strip */}
+      {(favsLoading || hasFavs) && (
+        <Section
+          title="Favourites"
+          href="/favourites"
+          icon={<Heart className="size-4" />}
+          loading={favsLoading}
+        >
+          {favsLoading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <ImageCardSkeleton key={i} />
+              ))
+            : favourites!.items.map((img) => (
+                <FavStrip key={img.id} image={img} />
+              ))}
+        </Section>
+      )}
+
+      {/* Albums grid */}
+      {(albumsLoading || hasAlbums) && (
+        <Section
+          title="Albums"
+          href="/albums"
+          icon={<FolderOpen className="size-4" />}
+          loading={albumsLoading}
+        >
+          {albumsLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <AlbumCardSkeleton key={i} />
+              ))
+            : albums!.map((album) => (
+                <AlbumCard key={album.id} album={album} />
+              ))}
+        </Section>
+      )}
+
+      {/* Empty state */}
+      {isEmpty && <EmptyState />}
+    </div>
+  )
+}
+
+function Section({
+  title, href, icon, loading, children,
+}: {
+  title: string
+  href: string
+  icon: React.ReactNode
+  loading: boolean
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (loading || !ref.current) return
+    gsap.fromTo(ref.current,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }
+    )
+  }, [loading])
+
+  return (
+    <section ref={ref}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-base font-semibold">
+          {icon}
+          {title}
+        </h2>
+        <Link
+          href={href}
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-muted-foreground")}
+        >
+          View all <ChevronRight className="size-3.5" />
         </Link>
       </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        {children}
+      </div>
+    </section>
+  )
+}
 
-      {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          Failed to load images. Please try again.
-        </div>
+function FavStrip({ image }: { image: { id: string; url?: string; filename: string; width?: number; height?: number } }) {
+  return (
+    <Link
+      href={`/images/${image.id}`}
+      className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
+    >
+      {image.url && (
+        <Image
+          src={image.url}
+          alt={image.filename}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          unoptimized
+        />
       )}
+    </Link>
+  )
+}
 
-      {isLoading && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {Array.from({ length: LIMIT }).map((_, i) => (
-            <ImageCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {!isLoading && data?.items.length === 0 && <EmptyState />}
-
-      {!isLoading && data && data.items.length > 0 && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {data.items.map((image) => (
-              <ImageCard
-                key={image.id}
-                image={image}
-                onDelete={(id) => deleteMedia.mutate(id)}
-                isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
-              />
-            ))}
+function AlbumCard({ album }: { album: { id: string; name: string; image_count: number; cover_url?: string } }) {
+  return (
+    <Link
+      href={`/albums/${album.id}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:shadow-md transition-shadow"
+    >
+      <div className="relative aspect-square overflow-hidden bg-muted">
+        {album.cover_url ? (
+          <Image
+            src={album.cover_url}
+            alt={album.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <FolderOpen className="size-8 text-muted-foreground/30" />
           </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="truncate text-sm font-medium">{album.name}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {album.image_count} {album.image_count === 1 ? "photo" : "photos"}
+        </p>
+      </div>
+    </Link>
+  )
+}
 
-          {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+function AlbumCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <Skeleton className="aspect-square w-full rounded-none" />
+      <div className="space-y-1.5 p-3">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/3" />
+      </div>
     </div>
   )
 }
 
 function EmptyState() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    gsap.fromTo(ref.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" })
+  }, [])
+
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="mb-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <Images className="size-10 text-muted-foreground/50" />
+    <div ref={ref} className="flex flex-col items-center justify-center py-28 text-center">
+      <div className="mb-5 rounded-2xl border border-border bg-card p-7 shadow-sm">
+        <Images className="size-12 text-muted-foreground/40" />
       </div>
-      <h2 className="text-lg font-semibold">No images yet</h2>
-      <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-        Upload photos and they'll appear here. Supports PNG, JPG, GIF, WebP, and AVIF up to 50 MB.
+      <h2 className="text-xl font-semibold">Welcome to vault</h2>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        Upload your first photo to get started. Your gallery, albums, and favourites will appear here.
       </p>
       <Link href="/upload" className={cn(buttonVariants(), "mt-6 gap-2")}>
         <Upload className="size-4" />
-        Upload your first image
+        Upload your first photo
       </Link>
     </div>
   )
