@@ -94,6 +94,41 @@ export type ImagePage = {
   limit: number
 }
 
+export type StoryTransition = "fade" | "slide" | "zoom"
+
+export type StorySlide = {
+  id: string
+  story_id: string
+  image_id: string
+  position: number
+  duration_ms: number
+  transition: StoryTransition
+  caption?: string
+  filename: string
+  width?: number
+  height?: number
+  url?: string
+}
+
+export type Story = {
+  id: string
+  user_id: string
+  title: string
+  slide_count: number
+  cover_url?: string
+  created_at: string
+  updated_at: string
+}
+
+export type StoryDetail = Story & { slides: StorySlide[] }
+
+export type SlideInput = {
+  image_id: string
+  duration_ms: number
+  transition: StoryTransition
+  caption?: string
+}
+
 export type UploadInitResp = {
   image_id: string
   upload_url: string
@@ -195,4 +230,23 @@ export const backendApi = {
 
   removeFavourite: (token: string, id: string) =>
     request<void>(`${BACKEND_URL}/api/favourites/${id}`, { method: "DELETE" }, token),
+
+  listStories: (token: string) =>
+    request<{ items: Story[] }>(`${BACKEND_URL}/api/stories`, {}, token),
+
+  createStory: (token: string, title: string) =>
+    request<Story>(`${BACKEND_URL}/api/stories`, { method: "POST", body: JSON.stringify({ title }) }, token),
+
+  getStory: (token: string, id: string) =>
+    request<StoryDetail>(`${BACKEND_URL}/api/stories/${id}`, {}, token),
+
+  updateStory: (token: string, id: string, title: string, slides: SlideInput[]) =>
+    request<StoryDetail>(
+      `${BACKEND_URL}/api/stories/${id}`,
+      { method: "PUT", body: JSON.stringify({ title, slides }) },
+      token
+    ),
+
+  deleteStory: (token: string, id: string) =>
+    request<void>(`${BACKEND_URL}/api/stories/${id}`, { method: "DELETE" }, token),
 }

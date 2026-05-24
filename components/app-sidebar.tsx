@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Vault, Images, FolderOpen, Heart, Upload,
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sun, Moon,
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sun, Moon, Clapperboard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLogout } from "@/hooks/use-auth"
@@ -40,6 +40,7 @@ const navItems = [
   { href: "/photos", icon: Images, label: "All Photos" },
   { href: "/albums", icon: FolderOpen, label: "Albums" },
   { href: "/favourites", icon: Heart, label: "Favourites" },
+  { href: "/stories", icon: Clapperboard, label: "Stories" },
 ]
 
 const navItemClass = (active: boolean, collapsed: boolean) =>
