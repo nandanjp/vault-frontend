@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { Upload } from "lucide-react"
+import { Upload, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
+import { AlbumPickerDialog } from "@/components/album-picker-dialog"
 import { useMedia, useDeleteMedia } from "@/hooks/use-media"
+import gsap, { ScrollTrigger } from "@/lib/gsap"
 
 const LIMIT = 20
 
@@ -14,11 +16,46 @@ export default function PhotosPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading, isError } = useMedia(page, LIMIT)
   const deleteMedia = useDeleteMedia()
+  const [addToAlbumTarget, setAddToAlbumTarget] = useState<string | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
   const pendingCount = data?.items.filter(
     (i) => i.status === "pending" || i.status === "processing"
   ).length ?? 0
+
+  // ScrollTrigger stagger as cards enter viewport
+  useEffect(() => {
+    if (isLoading || !gridRef.current) return
+    const cards = gridRef.current.querySelectorAll<HTMLElement>("[data-card]")
+    gsap.set(cards, { opacity: 0, y: 22 })
+
+    const triggers = ScrollTrigger.batch(cards, {
+      scroller: "#scroll-main",
+      start: "top 92%",
+      onEnter: (els) =>
+        gsap.to(els, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06, ease: "power2.out" }),
+      once: true,
+    })
+
+    return () => triggers.forEach((t) => t.kill())
+  }, [isLoading, data])
+
+  // Collapse card then delete
+  const handleDelete = (id: string) => {
+    const wrapper = document.querySelector<HTMLElement>(`[data-card="${id}"]`)
+    if (!wrapper) { deleteMedia.mutate(id); return }
+    const h = wrapper.offsetHeight
+    gsap.fromTo(
+      wrapper,
+      { height: h, overflow: "hidden" },
+      {
+        height: 0, opacity: 0, marginBottom: 0,
+        duration: 0.32, ease: "power2.in",
+        onComplete: () => deleteMedia.mutate(id),
+      }
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -49,8 +86,12 @@ export default function PhotosPage() {
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {Array.from({ length: LIMIT }).map((_, i) => <ImageCardSkeleton key={i} />)}
+        <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
+          {Array.from({ length: LIMIT }).map((_, i) => (
+            <div key={i} className="mb-3 break-inside-avoid">
+              <ImageCardSkeleton />
+            </div>
+          ))}
         </div>
       )}
 
@@ -66,16 +107,32 @@ export default function PhotosPage() {
 
       {!isLoading && data && data.items.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div ref={gridRef} className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
             {data.items.map((image) => (
-              <ImageCard
+              <div
                 key={image.id}
-                image={image}
-                onDelete={(id) => deleteMedia.mutate(id)}
-                isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
-              />
+                data-card={image.id}
+                className="group/wrap relative mb-3 break-inside-avoid"
+              >
+                <ImageCard
+                  image={image}
+                  natural
+                  onDelete={handleDelete}
+                  isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
+                />
+                {image.status === "ready" && (
+                  <button
+                    onClick={() => setAddToAlbumTarget(image.id)}
+                    className="absolute bottom-2 left-2 hidden items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm transition-colors hover:bg-black/80 group-hover/wrap:flex"
+                  >
+                    <FolderPlus className="size-3" />
+                    Add to album
+                  </button>
+                )}
+              </div>
             ))}
           </div>
+
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-3">
               <Button
@@ -100,6 +157,14 @@ export default function PhotosPage() {
             </div>
           )}
         </>
+      )}
+
+      {addToAlbumTarget && (
+        <AlbumPickerDialog
+          open
+          onOpenChange={(open) => { if (!open) setAddToAlbumTarget(null) }}
+          imageId={addToAlbumTarget}
+        />
       )}
     </div>
   )

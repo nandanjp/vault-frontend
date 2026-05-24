@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import type { Image as ImageModel } from "@/lib/api"
-import gsap from "gsap"
+import gsap from "@/lib/gsap"
 
 const AUTOPLAY_MS = 5000
 
@@ -39,6 +39,27 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
       { opacity: 1, y: 0, duration: 0.55, ease: "power2.out", delay: 0.05 }
     )
   }, [])
+
+  // Ken Burns — slow pan/zoom on the active slide's foreground image
+  useEffect(() => {
+    const slideEl = slidesRef.current[current]
+    if (!slideEl) return
+    const img = slideEl.querySelector<HTMLElement>(".kb-target")
+    if (!img) return
+    gsap.killTweensOf(img)
+    // Alternate pan direction per slide for variety
+    const dirs = [
+      { x: -14, y: -6 },
+      { x: 12,  y: -8 },
+      { x: -8,  y:  6 },
+      { x: 10,  y:  4 },
+    ]
+    const d = dirs[current % dirs.length]
+    gsap.fromTo(img,
+      { scale: 1,    x: 0,    y: 0 },
+      { scale: 1.08, x: d.x,  y: d.y, duration: 6, ease: "none" }
+    )
+  }, [current])
 
   const goTo = useCallback(
     (next: number) => {
@@ -103,7 +124,7 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}
-                className="max-h-full max-w-full object-contain drop-shadow-2xl select-none"
+                className="kb-target max-h-full max-w-full object-contain drop-shadow-2xl select-none"
                 unoptimized
                 priority={i === 0}
                 draggable={false}

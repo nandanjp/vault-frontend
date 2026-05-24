@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
 import { useFavourites } from "@/hooks/use-favourites"
 import { useDeleteMedia } from "@/hooks/use-media"
+import gsap, { ScrollTrigger } from "@/lib/gsap"
 
 const LIMIT = 20
 
@@ -13,8 +14,40 @@ export default function FavouritesPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = useFavourites(page, LIMIT)
   const deleteMedia = useDeleteMedia()
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
+
+  useEffect(() => {
+    if (isLoading || !gridRef.current) return
+    const cards = gridRef.current.querySelectorAll<HTMLElement>("[data-card]")
+    gsap.set(cards, { opacity: 0, y: 22 })
+
+    const triggers = ScrollTrigger.batch(cards, {
+      scroller: "#scroll-main",
+      start: "top 92%",
+      onEnter: (els) =>
+        gsap.to(els, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06, ease: "power2.out" }),
+      once: true,
+    })
+
+    return () => triggers.forEach((t) => t.kill())
+  }, [isLoading, data])
+
+  const handleDelete = (id: string) => {
+    const wrapper = document.querySelector<HTMLElement>(`[data-card="${id}"]`)
+    if (!wrapper) { deleteMedia.mutate(id); return }
+    const h = wrapper.offsetHeight
+    gsap.fromTo(
+      wrapper,
+      { height: h, overflow: "hidden" },
+      {
+        height: 0, opacity: 0, marginBottom: 0,
+        duration: 0.32, ease: "power2.in",
+        onComplete: () => deleteMedia.mutate(id),
+      }
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -28,8 +61,12 @@ export default function FavouritesPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {Array.from({ length: LIMIT }).map((_, i) => <ImageCardSkeleton key={i} />)}
+        <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
+          {Array.from({ length: LIMIT }).map((_, i) => (
+            <div key={i} className="mb-3 break-inside-avoid">
+              <ImageCardSkeleton />
+            </div>
+          ))}
         </div>
       )}
 
@@ -47,14 +84,20 @@ export default function FavouritesPage() {
 
       {!isLoading && data && data.items.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div ref={gridRef} className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
             {data.items.map((image) => (
-              <ImageCard
+              <div
                 key={image.id}
-                image={image}
-                onDelete={(id) => deleteMedia.mutate(id)}
-                isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
-              />
+                data-card={image.id}
+                className="mb-3 break-inside-avoid"
+              >
+                <ImageCard
+                  image={image}
+                  natural
+                  onDelete={handleDelete}
+                  isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
+                />
+              </div>
             ))}
           </div>
 

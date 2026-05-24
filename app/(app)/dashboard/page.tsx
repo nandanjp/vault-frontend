@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useGallery } from "@/hooks/use-gallery"
 import { useAlbums } from "@/hooks/use-albums"
 import { useFavourites } from "@/hooks/use-favourites"
-import gsap from "gsap"
+import gsap from "@/lib/gsap"
 
 export default function DashboardPage() {
   const { data: gallery, isLoading: galleryLoading } = useGallery()

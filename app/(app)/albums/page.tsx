@@ -4,17 +4,16 @@ import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { FolderOpen, FolderPlus, Trash2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useAlbums, useCreateAlbum, useDeleteAlbum } from "@/hooks/use-albums"
+import { useAlbums, useAlbumImages, useCreateAlbum, useDeleteAlbum } from "@/hooks/use-albums"
 import type { Album } from "@/lib/api"
-import gsap from "gsap"
+import gsap from "@/lib/gsap"
 
 export default function AlbumsPage() {
   const { data: albums, isLoading } = useAlbums()
@@ -113,24 +112,14 @@ export default function AlbumsPage() {
 
 function AlbumCard({ album }: { album: Album }) {
   const deleteAlbum = useDeleteAlbum()
+  const { data: images } = useAlbumImages(album.id, 1, 4)
+  const thumbs = images?.items.filter((i) => i.status === "ready" && i.url) ?? []
 
   return (
     <div data-card className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:shadow-md transition-shadow">
       <Link href={`/albums/${album.id}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
-          {album.cover_url ? (
-            <Image
-              src={album.cover_url}
-              alt={album.name}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <FolderOpen className="size-10 text-muted-foreground/25" />
-            </div>
-          )}
+          <AlbumCoverGrid thumbs={thumbs.map((i) => ({ url: i.url!, filename: i.filename }))} name={album.name} />
         </div>
         <div className="p-3">
           <p className="truncate text-sm font-medium">{album.name}</p>
@@ -140,7 +129,7 @@ function AlbumCard({ album }: { album: Album }) {
         </div>
       </Link>
 
-      {/* Delete button on hover */}
+      {/* Delete on hover */}
       <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
         <AlertDialog>
           <AlertDialogTrigger
@@ -174,6 +163,41 @@ function AlbumCard({ album }: { album: Album }) {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+    </div>
+  )
+}
+
+function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: string }[]; name: string }) {
+  if (thumbs.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <FolderOpen className="size-10 text-muted-foreground/25" />
+      </div>
+    )
+  }
+
+  if (thumbs.length === 1) {
+    return (
+      <Image src={thumbs[0].url} alt={thumbs[0].filename} fill className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
+    )
+  }
+
+  // 2-4 photos: 2×2 grid (empty slots get a muted bg)
+  return (
+    <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="relative overflow-hidden bg-muted">
+          {thumbs[i] ? (
+            <Image
+              src={thumbs[i].url}
+              alt={thumbs[i].filename}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              unoptimized
+            />
+          ) : null}
+        </div>
+      ))}
     </div>
   )
 }

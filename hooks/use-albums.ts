@@ -15,7 +15,7 @@ export function useAlbums() {
 
 export function useAlbumImages(id: string, page: number, limit = 20) {
   return useQuery<ImagePage>({
-    queryKey: ["albums", id, "images", page],
+    queryKey: ["albums", id, "images", page, limit],
     queryFn: () => apiFetch(`/api/albums/${id}/images?page=${page}&limit=${limit}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,

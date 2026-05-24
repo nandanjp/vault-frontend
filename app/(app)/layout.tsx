@@ -1,4 +1,5 @@
 import { SidebarProvider, AppSidebar, MobileTopBar } from "@/components/app-sidebar"
+import { PageTransition } from "@/components/page-transition"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,7 +8,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <MobileTopBar />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main id="scroll-main" className="flex-1 overflow-y-auto">
+            <PageTransition>{children}</PageTransition>
+          </main>
         </div>
       </div>
     </SidebarProvider>

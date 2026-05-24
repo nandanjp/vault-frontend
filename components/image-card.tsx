@@ -7,7 +7,6 @@ import { Trash2, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,45 +22,77 @@ import type { Image as ImageModel } from "@/lib/api"
 
 interface ImageCardProps {
   image: ImageModel
-  onDelete: (id: string) => void
-  isDeleting: boolean
+  onDelete?: (id: string) => void
+  isDeleting?: boolean
+  // natural=true → use real aspect ratio (masonry); false (default) → aspect-square
+  natural?: boolean
 }
 
-export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
-  const isReady = image.status === "ready"
-  const isFailed = image.status === "failed"
-  const isPending = image.status === "pending"
+export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardProps) {
+  const isReady     = image.status === "ready"
+  const isFailed    = image.status === "failed"
+  const isPending   = image.status === "pending"
   const isProcessing = image.status === "processing"
-  const canDelete = isReady || isFailed || isPending
+  const canDelete   = isReady || isFailed || isPending
   const [imgLoaded, setImgLoaded] = useState(false)
 
+  const aspectStyle = natural && image.width && image.height
+    ? { aspectRatio: `${image.width}/${image.height}` }
+    : undefined
+
   const imageArea = (
-    <div className="aspect-square w-full overflow-hidden bg-muted">
+    <div
+      className={cn("relative w-full overflow-hidden bg-muted", !natural && "aspect-square")}
+      style={aspectStyle}
+    >
       {isReady && image.url ? (
-        <Image
-          src={image.url}
-          alt={image.filename}
-          width={image.width ?? 400}
-          height={image.height ?? 400}
-          className={cn(
-            "h-full w-full object-cover transition-all duration-500 group-hover:scale-105",
-            imgLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setImgLoaded(true)}
-          unoptimized
-          loading="lazy"
-        />
+        <>
+          {/* Blurred placeholder — same URL, browser deduplicates the request */}
+          <div
+            className={cn(
+              "absolute inset-0 scale-110 bg-cover bg-center transition-opacity duration-300",
+              imgLoaded ? "opacity-0" : "opacity-100"
+            )}
+            style={{ backgroundImage: `url(${image.url})`, filter: "blur(18px)" }}
+          />
+          <Image
+            src={image.url}
+            alt={image.filename}
+            width={image.width ?? 400}
+            height={image.height ?? 400}
+            className={cn(
+              "h-full w-full object-cover transition-all duration-300 group-hover:scale-105",
+              imgLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setImgLoaded(true)}
+            unoptimized
+            loading="lazy"
+          />
+          {/* Filename overlay — slides up on hover */}
+          <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 transition-transform duration-300 ease-out group-hover:translate-y-0">
+            <p className="truncate text-xs font-medium text-white/90">{image.filename}</p>
+          </div>
+        </>
       ) : isFailed ? (
-        <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+        <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <AlertCircle className="size-8 text-destructive/60" />
           <span className="text-xs">Processing failed</span>
         </div>
       ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+        <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="size-8 animate-spin opacity-40" />
           <span className="text-xs">Processing…</span>
         </div>
       )}
+
+      {/* Status badge for non-ready images */}
+      {!isReady && (
+        <div className="absolute left-2 top-2">
+          <StatusBadge status={image.status} />
+        </div>
+      )}
+
+      {isProcessing && <div className="absolute inset-0 bg-background/10" />}
     </div>
   )
 
@@ -75,24 +106,10 @@ export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
         imageArea
       )}
 
-      <div className="p-3">
-        <p className="truncate text-sm font-medium" title={image.filename}>
-          {image.filename}
-        </p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <StatusBadge status={image.status} />
-          {image.width && image.height && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {image.width}×{image.height}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {canDelete && (
+      {canDelete && onDelete && (
         <div
           className={cn(
-            "absolute right-2 top-2 transition-opacity",
+            "absolute right-2 top-2 z-10 transition-opacity",
             isReady ? "opacity-0 group-hover:opacity-100" : "opacity-100"
           )}
         >
@@ -130,8 +147,6 @@ export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
           </AlertDialog>
         </div>
       )}
-
-      {isProcessing && <div className="absolute inset-0 bg-background/10" />}
     </div>
   )
 }
@@ -157,11 +172,7 @@ function StatusBadge({ status }: { status: ImageModel["status"] }) {
 export function ImageCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <Skeleton className="aspect-square w-full rounded-none" />
-      <div className="space-y-2 p-3">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/4" />
-      </div>
+      <div className="aspect-square w-full animate-pulse bg-muted" />
     </div>
   )
 }

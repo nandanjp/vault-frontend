@@ -3,16 +3,15 @@
 import { createContext, useContext, useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTheme } from "next-themes"
 import {
   Vault, Images, FolderOpen, Heart, Upload,
-  LogOut, ChevronLeft, ChevronRight, Menu, X,
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sun, Moon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
 import { useLogout } from "@/hooks/use-auth"
 
-// ---------- shared mobile state ----------
+// ---------- context ----------
 
 type SidebarCtx = { mobileOpen: boolean; openMobile: () => void; closeMobile: () => void }
 const SidebarContext = createContext<SidebarCtx>({
@@ -20,19 +19,15 @@ const SidebarContext = createContext<SidebarCtx>({
   openMobile: () => {},
   closeMobile: () => {},
 })
-export function useSidebar() {
-  return useContext(SidebarContext)
-}
+export function useSidebar() { return useContext(SidebarContext) }
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   return (
-    <SidebarContext.Provider
-      value={{
-        mobileOpen,
-        openMobile: () => setMobileOpen(true),
-        closeMobile: () => setMobileOpen(false),
-      }}
-    >
+    <SidebarContext.Provider value={{
+      mobileOpen,
+      openMobile: () => setMobileOpen(true),
+      closeMobile: () => setMobileOpen(false),
+    }}>
       {children}
     </SidebarContext.Provider>
   )
@@ -47,12 +42,22 @@ const navItems = [
   { href: "/favourites", icon: Heart, label: "Favourites" },
 ]
 
+const navItemClass = (active: boolean, collapsed: boolean) =>
+  cn(
+    "flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150",
+    !collapsed && active  && "border-l-2 border-primary bg-primary/[.07] pl-2.5 pr-3 text-foreground",
+    !collapsed && !active && "px-3 text-muted-foreground hover:bg-muted hover:text-foreground",
+    collapsed  && active  && "justify-center px-2 bg-primary/[.07] text-foreground",
+    collapsed  && !active && "justify-center px-2 text-muted-foreground hover:bg-muted hover:text-foreground",
+  )
+
 // ---------- sidebar ----------
 
 export function AppSidebar() {
   const pathname = usePathname()
   const logout = useLogout()
   const { mobileOpen, closeMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
 
   const [collapsed, setCollapsed] = useState(false)
   useEffect(() => {
@@ -75,17 +80,7 @@ export function AppSidebar() {
           ? pathname === "/dashboard"
           : pathname === href || pathname.startsWith(href + "/")
         return (
-          <Link
-            key={href}
-            href={href}
-            onClick={closeMobile}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
+          <Link key={href} href={href} onClick={closeMobile} className={navItemClass(active, collapsed)}>
             <Icon className="size-4 shrink-0" />
             {!collapsed && label}
           </Link>
@@ -99,31 +94,29 @@ export function AppSidebar() {
       <Link
         href="/upload"
         onClick={closeMobile}
-        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className={navItemClass(false, collapsed)}
       >
         <Upload className="size-4 shrink-0" />
         {!collapsed && "Upload"}
       </Link>
-      <div className={cn(
-        "flex items-center rounded-lg px-3 py-1.5",
-        collapsed && "justify-center px-0"
-      )}>
-        <ThemeToggle />
-        {!collapsed && <span className="ml-3 text-sm text-muted-foreground">Theme</span>}
-      </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(
-          "w-full text-muted-foreground hover:text-foreground",
-          collapsed ? "justify-center px-0" : "justify-start gap-3"
-        )}
+
+      <button
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className={navItemClass(false, collapsed)}
+      >
+        <Sun className="size-4 shrink-0 dark:hidden" />
+        <Moon className="hidden size-4 shrink-0 dark:block" />
+        {!collapsed && "Theme"}
+      </button>
+
+      <button
         onClick={() => { logout.mutate(); closeMobile() }}
         disabled={logout.isPending}
+        className={navItemClass(false, collapsed)}
       >
         <LogOut className="size-4 shrink-0" />
         {!collapsed && "Sign out"}
-      </Button>
+      </button>
     </div>
   )
 
@@ -131,10 +124,7 @@ export function AppSidebar() {
     <>
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={closeMobile}
-        />
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={closeMobile} />
       )}
 
       {/* Desktop sidebar */}
@@ -151,9 +141,7 @@ export function AppSidebar() {
           onClick={toggleCollapsed}
           className="absolute -right-3 top-[60px] flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm hover:text-foreground transition-colors z-10"
         >
-          {collapsed
-            ? <ChevronRight className="size-3" />
-            : <ChevronLeft className="size-3" />}
+          {collapsed ? <ChevronRight className="size-3" /> : <ChevronLeft className="size-3" />}
         </button>
       </aside>
 
@@ -191,7 +179,7 @@ function SidebarHeader({ collapsed }: { collapsed: boolean }) {
   )
 }
 
-// ---------- mobile top bar (rendered in layout) ----------
+// ---------- mobile top bar ----------
 
 export function MobileTopBar() {
   const { openMobile } = useSidebar()

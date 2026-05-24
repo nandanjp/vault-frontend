@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -22,6 +22,7 @@ import {
 import { useMediaItem, useDeleteMedia } from "@/hooks/use-media"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
+import gsap from "@/lib/gsap"
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`
@@ -49,6 +50,38 @@ export default function ImageDetailPage() {
   const addToAlbum = useAddToAlbum()
   const [imgLoaded, setImgLoaded] = useState(false)
   const [albumPopoverOpen, setAlbumPopoverOpen] = useState(false)
+  const heartBtnRef = useRef<HTMLButtonElement>(null)
+
+  const handleFavourite = () => {
+    if (!image) return
+    // Burst only when adding (not removing)
+    if (!image.is_favourited && heartBtnRef.current) {
+      gsap.fromTo(heartBtnRef.current,
+        { scale: 1 },
+        { scale: 1.4, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out" }
+      )
+      const rect = heartBtnRef.current.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      for (let i = 0; i < 12; i++) {
+        const el = document.createElement("div")
+        const size = 3 + Math.random() * 5
+        el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;border-radius:50%;background:#f43f5e;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)`
+        document.body.appendChild(el)
+        const angle = (i / 12) * Math.PI * 2
+        const dist = 20 + Math.random() * 32
+        gsap.to(el, {
+          x: Math.cos(angle) * dist,
+          y: Math.sin(angle) * dist,
+          opacity: 0, scale: 0,
+          duration: 0.48 + Math.random() * 0.22,
+          ease: "power2.out",
+          onComplete: () => el.remove(),
+        })
+      }
+    }
+    toggleFavourite.mutate({ id, isFav: !!image.is_favourited })
+  }
 
   const handleDelete = () => {
     deleteMedia.mutate(id, {
@@ -88,10 +121,11 @@ export default function ImageDetailPage() {
             {/* Favourite toggle */}
             {image.status === "ready" && (
               <Button
+                ref={heartBtnRef}
                 variant="outline"
                 size="sm"
                 className={cn("gap-2", image.is_favourited && "border-rose-400/60 text-rose-500 hover:text-rose-500")}
-                onClick={() => toggleFavourite.mutate({ id, isFav: !!image.is_favourited })}
+                onClick={handleFavourite}
                 disabled={toggleFavourite.isPending}
               >
                 <Heart className={cn("size-4", image.is_favourited && "fill-rose-500")} />
@@ -184,6 +218,19 @@ export default function ImageDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Image panel */}
+        <div className="relative">
+          {/* Ambient glow from the image's own colours */}
+          {image?.status === "ready" && image.url && (
+            <div
+              className="pointer-events-none absolute inset-0 -z-10 rounded-2xl opacity-[0.22] blur-[60px] saturate-[2]"
+              style={{
+                backgroundImage: `url(${image.url})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                transform: "scale(1.15)",
+              }}
+            />
+          )}
         <div className="overflow-hidden rounded-xl border border-border bg-muted">
           {isLoading ? (
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
@@ -216,6 +263,7 @@ export default function ImageDetailPage() {
             </div>
           )}
         </div>
+        </div>{/* end ambient glow wrapper */}
 
         {/* Metadata sidebar */}
         <div className="lg:sticky lg:top-22 lg:self-start">
