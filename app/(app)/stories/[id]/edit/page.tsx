@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback, useReducer } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import {
-  ArrowLeft, Play, Plus, Trash2, GripVertical, ImageIcon, Music,
-  Check, Images,
+  ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
+  Check, Images, Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -96,7 +96,6 @@ const TRANSITIONS: { value: StoryTransition; label: string }[] = [
 
 export default function StoryEditPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
   const { data: story, isLoading } = useStory(id)
   const updateStory = useUpdateStory()
 
@@ -105,6 +104,8 @@ export default function StoryEditPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved")
+  const [editingTitle, setEditingTitle] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   // Load story data into draft on first fetch
   const loaded = useRef(false)
@@ -172,12 +173,12 @@ export default function StoryEditPage() {
     setActiveIdx(draft.slides.length + images.length - 1)
   }
 
-  const handleRemove = (tempId: string, i: number) => {
+  const handleRemove = (tempId: string) => {
     dispatch({ type: "REMOVE_SLIDE", tempId })
     setActiveIdx((prev) => Math.min(prev, Math.max(0, draft.slides.length - 2)))
   }
 
-  // Map draft slides → StorySlide for the player
+  // Map draft → StorySlide for the player
   const playerSlides: StorySlide[] = draft.slides.map((s, i) => ({
     id: s.id ?? s.tempId,
     story_id: id,
@@ -200,29 +201,47 @@ export default function StoryEditPage() {
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
         <Link
           href="/stories"
-          className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
           Stories
         </Link>
-        <div className="mx-2 h-4 w-px bg-border" />
-        <input
-          value={draft.title}
-          onChange={(e) => dispatch({ type: "SET_TITLE", title: e.target.value })}
-          placeholder="Story title"
-          className="flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-muted-foreground/50"
-        />
+        <div className="mx-1 h-4 w-px bg-border" />
+
+        {/* Editable title */}
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            autoFocus
+            value={draft.title}
+            onChange={(e) => dispatch({ type: "SET_TITLE", title: e.target.value })}
+            onBlur={() => setEditingTitle(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === "Escape") setEditingTitle(false)
+            }}
+            className="min-w-0 flex-1 bg-transparent text-base font-semibold outline-none border-b border-primary pb-px"
+          />
+        ) : (
+          <button
+            onClick={() => { setEditingTitle(true); setTimeout(() => titleInputRef.current?.select(), 0) }}
+            className="group flex min-w-0 flex-1 items-center gap-2 text-left"
+          >
+            <span className="truncate text-base font-semibold">{draft.title || "Untitled Story"}</span>
+            <Pencil className="size-3.5 shrink-0 text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/60" />
+          </button>
+        )}
+
         <span className={cn(
-          "text-xs transition-colors",
+          "shrink-0 text-xs transition-colors",
           saveStatus === "saving" && "text-muted-foreground",
-          saveStatus === "saved" && "text-muted-foreground/50",
+          saveStatus === "saved" && "text-muted-foreground/40",
           saveStatus === "unsaved" && "text-amber-500",
         )}>
           {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Unsaved"}
         </span>
         <Button
           size="sm"
-          className="gap-2"
+          className="shrink-0 gap-2"
           onClick={() => setPlaying(true)}
           disabled={draft.slides.length === 0}
         >
@@ -233,8 +252,8 @@ export default function StoryEditPage() {
 
       {/* Three-column layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: slide strip */}
-        <div className="flex w-[88px] shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/20 p-2 gap-2">
+        {/* Left: slide strip — wider for more usable thumbnails */}
+        <div className="flex w-[152px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-border bg-muted/20 p-2.5">
           {draft.slides.map((slide, i) => (
             <SlideThumb
               key={slide.tempId}
@@ -242,38 +261,35 @@ export default function StoryEditPage() {
               index={i}
               active={i === activeIdx}
               onSelect={() => setActiveIdx(i)}
-              onRemove={() => handleRemove(slide.tempId, i)}
+              onRemove={() => handleRemove(slide.tempId)}
             />
           ))}
           <button
             onClick={() => setPickerOpen(true)}
-            className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
           >
             <Plus className="size-5" />
-            <span className="text-[10px] font-medium">Add</span>
+            <span className="text-[11px] font-medium">Add slides</span>
           </button>
         </div>
 
-        {/* Center: phone preview */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden bg-muted/10 p-6">
-          <PhonePreview slide={activeSlide} totalSlides={draft.slides.length} activeIdx={activeIdx} />
-          {draft.slides.length === 0 && (
-            <p className="text-sm text-muted-foreground">Add slides from the left panel to get started.</p>
-          )}
+        {/* Center: large image view — no phone frame, no transitions */}
+        <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-zinc-950">
+          <SlideView slide={activeSlide} totalSlides={draft.slides.length} activeIdx={activeIdx} />
         </div>
 
         {/* Right: slide config */}
-        <div className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-border p-5">
+        <div className="flex w-[272px] shrink-0 flex-col overflow-y-auto border-l border-border p-5">
           {activeSlide ? (
             <SlideConfig
               slide={activeSlide}
               index={activeIdx}
               total={draft.slides.length}
               onChange={(patch) => dispatch({ type: "UPDATE_SLIDE", tempId: activeSlide.tempId, patch })}
-              onRemove={() => handleRemove(activeSlide.tempId, activeIdx)}
+              onRemove={() => handleRemove(activeSlide.tempId)}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <ImageIcon className="size-8 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">Select a slide to configure it</p>
             </div>
@@ -288,7 +304,7 @@ export default function StoryEditPage() {
         onAdd={handleAddImages}
       />
 
-      {/* Story player overlay */}
+      {/* Story player overlay — only shown when Preview is clicked */}
       {playing && playerSlides.length > 0 && (
         <StoryPlayer
           slides={playerSlides}
@@ -314,8 +330,10 @@ function SlideThumb({
   return (
     <div
       className={cn(
-        "group relative aspect-[9/16] w-full cursor-pointer overflow-hidden rounded-lg border-2 transition-all",
-        active ? "border-primary shadow-sm shadow-primary/20" : "border-transparent hover:border-border"
+        "group relative aspect-[9/16] w-full cursor-pointer overflow-hidden rounded-xl border-2 transition-all",
+        active
+          ? "border-primary shadow-md shadow-primary/20"
+          : "border-transparent hover:border-border"
       )}
       onClick={onSelect}
     >
@@ -331,99 +349,95 @@ function SlideThumb({
         />
       ) : (
         <div className="flex h-full items-center justify-center bg-muted">
-          <ImageIcon className="size-4 text-muted-foreground/40" />
+          <ImageIcon className="size-5 text-muted-foreground/40" />
         </div>
       )}
       {/* Index badge */}
-      <div className="absolute left-1 top-1 flex size-4 items-center justify-center rounded-full bg-black/60 text-[9px] font-bold text-white">
+      <div className="absolute left-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-bold text-white">
         {index + 1}
       </div>
-      {/* Remove on hover */}
+      {/* Remove button on hover */}
       <button
         onClick={(e) => { e.stopPropagation(); onRemove() }}
-        className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100"
+        className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
       >
-        <Trash2 className="size-2.5" />
+        <Trash2 className="size-3" />
       </button>
+      {/* Active indicator strip */}
+      {active && (
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+      )}
     </div>
   )
 }
 
-// ---------- Phone preview (static) ----------
+// ---------- Center slide view (no phone, no transitions) ----------
 
-function PhonePreview({
+function SlideView({
   slide, totalSlides, activeIdx,
 }: {
   slide: DraftSlide | undefined
   totalSlides: number
   activeIdx: number
 }) {
-  return (
-    <div
-      className="relative overflow-hidden rounded-[36px] border-[5px] border-zinc-800 bg-zinc-950 shadow-xl"
-      style={{ width: 270, height: 480 }}
-    >
-      {/* Notch */}
-      <div className="absolute left-1/2 top-2.5 z-20 h-[14px] w-20 -translate-x-1/2 rounded-full bg-zinc-800" />
+  if (!slide) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center">
+        <ImageIcon className="size-12 text-zinc-700" />
+        <p className="text-sm text-zinc-500">Add slides from the left panel to get started</p>
+      </div>
+    )
+  }
 
-      {/* Image */}
-      <div className="absolute inset-0">
-        {slide?.url ? (
-          <Image
-            src={slide.url}
-            alt={slide.filename}
-            fill
-            placeholder="blur"
-            blurDataURL={shimmerPlaceholder}
-            className="object-cover"
-            unoptimized
-          />
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      {/* Blurred background fill */}
+      {slide.url && (
+        <div
+          className="absolute inset-0 scale-110"
+          style={{
+            backgroundImage: `url(${slide.url})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(32px) brightness(0.3) saturate(1.4)",
+          }}
+        />
+      )}
+
+      {/* Image — contained, natural aspect ratio */}
+      <div className="relative z-10 flex h-full max-h-full w-full items-center justify-center p-10">
+        {slide.url ? (
+          <div className="relative h-full w-full">
+            <Image
+              key={slide.tempId}
+              src={slide.url}
+              alt={slide.filename}
+              fill
+              placeholder="blur"
+              blurDataURL={shimmerPlaceholder}
+              className="object-contain drop-shadow-2xl"
+              unoptimized
+            />
+          </div>
         ) : (
-          <div className="flex h-full items-center justify-center bg-zinc-900">
-            <ImageIcon className="size-10 text-zinc-700" />
+          <div className="flex h-64 w-64 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900">
+            <ImageIcon className="size-12 text-zinc-600" />
           </div>
         )}
       </div>
 
-      {/* Gradient overlays */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-black/60 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/60 to-transparent" />
-
-      {/* Progress bars */}
-      {totalSlides > 0 && (
-        <div className="absolute inset-x-3 top-8 z-20 flex gap-0.5">
-          {Array.from({ length: totalSlides }).map((_, i) => (
-            <div key={i} className="h-[2px] flex-1 overflow-hidden rounded-full bg-white/30">
-              <div
-                className="h-full rounded-full bg-white"
-                style={{ width: i < activeIdx ? "100%" : i === activeIdx ? "40%" : "0%" }}
-              />
-            </div>
-          ))}
+      {/* Caption overlay */}
+      {slide.caption && (
+        <div className="absolute inset-x-8 bottom-16 z-20 text-center">
+          <p className="text-base font-semibold text-white drop-shadow-lg">{slide.caption}</p>
         </div>
       )}
 
-      {/* Header */}
-      <div className="absolute inset-x-3 top-[40px] z-20 flex items-center gap-1.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60">
-          <span className="text-[9px] font-bold text-white">V</span>
-        </div>
-        <span className="text-[11px] font-semibold text-white">vault</span>
-      </div>
-
-      {/* Caption */}
-      {slide?.caption && (
-        <div className="absolute inset-x-3 bottom-14 z-20 text-center">
-          <p className="text-[12px] font-semibold text-white drop-shadow-lg leading-snug">{slide.caption}</p>
-        </div>
-      )}
-
-      {/* Music badge */}
-      <div className="absolute bottom-5 left-3 z-20">
-        <div className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-1">
-          <Music className="size-2.5 text-white/60" />
-          <span className="text-[9px] text-white/60">music</span>
-        </div>
+      {/* Slide position pill */}
+      <div className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 backdrop-blur-sm">
+        <span className="text-xs tabular-nums text-white/70">
+          Slide {activeIdx + 1} of {totalSlides}
+        </span>
       </div>
     </div>
   )
@@ -443,12 +457,10 @@ function SlideConfig({
   const durationSec = Math.round(slide.duration_ms / 1000)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Slide {index + 1} of {total}
-        </p>
-      </div>
+    <div className="flex flex-col gap-5">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        Slide {index + 1} of {total}
+      </p>
 
       {/* Duration */}
       <div className="space-y-2">
@@ -483,7 +495,7 @@ function SlideConfig({
                 "flex-1 rounded-lg border py-2 text-xs font-medium transition-all",
                 slide.transition === value
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground"
               )}
             >
               {label}
@@ -550,7 +562,7 @@ function SlideConfig({
 
 // ---------- Image picker dialog ----------
 
-const PICKER_LIMIT = 24
+const PICKER_LIMIT = 18
 
 function StoryImagePicker({
   open, onOpenChange, onAdd,
@@ -564,11 +576,11 @@ function StoryImagePicker({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const { data, isLoading } = useMedia(page, PICKER_LIMIT)
 
-  const photos = data?.items.filter((img) => {
+  const photos = (data?.items ?? []).filter((img) => {
     if (img.status !== "ready" || !img.url) return false
     if (search.trim()) return img.filename.toLowerCase().includes(search.toLowerCase())
     return true
-  }) ?? []
+  })
 
   const totalPages = data ? Math.ceil(data.total / PICKER_LIMIT) : 0
 
@@ -603,7 +615,7 @@ function StoryImagePicker({
       open={open}
       onOpenChange={handleClose}
       title="Add photos to story"
-      description="Tap photos to select them. Each becomes a slide."
+      description="Select photos — each becomes a slide in sequence."
       searchPlaceholder="Filter by filename…"
       isLoading={isLoading}
       search={search}
@@ -628,7 +640,7 @@ function StoryImagePicker({
       {photos.length === 0 ? (
         <PickerEmpty text={search ? "No photos match your search." : "No photos yet."} />
       ) : (
-        <div className="grid grid-cols-4 gap-2.5 pb-1">
+        <div className="grid grid-cols-3 gap-3 pb-1">
           {photos.map((img) => {
             const selected = selectedIds.has(img.id)
             return (
@@ -651,18 +663,16 @@ function StoryImagePicker({
                   className="object-cover"
                   unoptimized
                 />
-                <div
-                  className={cn(
-                    "absolute inset-0 flex items-center justify-center transition-opacity duration-150",
-                    selected ? "bg-primary/25 opacity-100" : "opacity-0"
-                  )}
-                >
-                  <div className="flex size-6 items-center justify-center rounded-full bg-primary shadow-md">
-                    <Check className="size-3.5 text-primary-foreground" />
+                <div className={cn(
+                  "absolute inset-0 flex items-center justify-center transition-opacity duration-150",
+                  selected ? "bg-primary/25 opacity-100" : "opacity-0"
+                )}>
+                  <div className="flex size-7 items-center justify-center rounded-full bg-primary shadow-md">
+                    <Check className="size-4 text-primary-foreground" />
                   </div>
                 </div>
                 {!selected && (
-                  <div className="absolute right-1.5 top-1.5 size-5 rounded-full border-2 border-white/70 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="absolute right-2 top-2 size-5 rounded-full border-2 border-white/70 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
                 )}
               </button>
             )
@@ -679,19 +689,17 @@ function BuilderSkeleton() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex h-14 items-center gap-3 border-b border-border px-4">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 flex-1 max-w-xs" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-5 w-48" />
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-[88px] border-r border-border bg-muted/20 p-2 space-y-2">
+        <div className="w-[152px] border-r border-border bg-muted/20 p-2.5 space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="w-full rounded-lg" style={{ aspectRatio: "9/16" }} />
+            <Skeleton key={i} className="w-full rounded-xl" style={{ aspectRatio: "9/16" }} />
           ))}
         </div>
-        <div className="flex flex-1 items-center justify-center">
-          <Skeleton className="rounded-[36px]" style={{ width: 270, height: 480 }} />
-        </div>
-        <div className="w-72 border-l border-border p-5 space-y-4">
+        <div className="flex-1 bg-zinc-950" />
+        <div className="w-[272px] border-l border-border p-5 space-y-4">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-20 w-full" />

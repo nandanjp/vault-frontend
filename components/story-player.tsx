@@ -18,17 +18,96 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
   const [idx, setIdx] = useState(initialIndex)
   const [paused, setPaused] = useState(false)
 
-  // Refs so GSAP callbacks see fresh values without stale closures
+  // Keep everything in refs so GSAP callbacks never have stale closures.
+  // This is the key fix — prev version depended on `slides` prop in useCallback
+  // deps, causing startProgress to restart mid-animation every time the parent
+  // re-rendered (e.g. during auto-save debounce).
+  const slidesRef = useRef(slides)
+  const onCloseRef = useRef(onClose)
   const idxRef = useRef(idx)
   const pausedRef = useRef(paused)
+  slidesRef.current = slides
+  onCloseRef.current = onClose
+  idxRef.current = idx
+  pausedRef.current = paused
+
   const slideEls = useRef<(HTMLDivElement | null)[]>([])
   const progressEls = useRef<(HTMLDivElement | null)[]>([])
   const progressTween = useRef<gsap.core.Tween | null>(null)
 
-  idxRef.current = idx
-  pausedRef.current = paused
+  // Stable — reads everything from refs, zero deps
+  const navigateTo = useCallback((nextIdx: number, dir: 1 | -1) => {
+    const ss = slidesRef.current
+    if (nextIdx < 0 || nextIdx >= ss.length) return
+    const curIdx = idxRef.current
+    if (nextIdx === curIdx) return
 
-  // Init: show only the first slide
+    progressTween.current?.kill()
+
+    // Reset all slides that aren't part of this transition
+    slideEls.current.forEach((el, i) => {
+      if (i !== curIdx && i !== nextIdx && el) {
+        gsap.set(el, { opacity: 0, x: 0, scale: 1 })
+      }
+    })
+
+    // Snap progress bars to correct filled state
+    progressEls.current.forEach((el, i) => {
+      if (el) gsap.set(el, { scaleX: i < nextIdx ? 1 : 0 })
+    })
+
+    const curEl = slideEls.current[curIdx]
+    const nextEl = slideEls.current[nextIdx]
+    const transition = ss[curIdx]?.transition ?? "fade"
+
+    if (transition === "slide") {
+      const toX = dir > 0 ? "-100%" : "100%"
+      const fromX = dir > 0 ? "100%" : "-100%"
+      if (nextEl) gsap.set(nextEl, { x: fromX, opacity: 1 })
+      if (curEl) gsap.to(curEl, { x: toX, duration: 0.38, ease: "power2.inOut" })
+      if (nextEl) gsap.to(nextEl, { x: "0%", duration: 0.38, ease: "power2.inOut" })
+    } else if (transition === "zoom") {
+      if (nextEl) gsap.set(nextEl, { opacity: 0, scale: 1.06, x: 0 })
+      if (curEl) gsap.to(curEl, { opacity: 0, scale: 0.94, duration: 0.38, ease: "power2.in" })
+      if (nextEl) gsap.to(nextEl, { opacity: 1, scale: 1, duration: 0.42, ease: "power2.out" })
+    } else {
+      // fade (default)
+      if (nextEl) gsap.set(nextEl, { opacity: 0, x: 0, scale: 1 })
+      if (curEl) gsap.to(curEl, { opacity: 0, duration: 0.3, ease: "power2.in" })
+      if (nextEl) gsap.to(nextEl, { opacity: 1, duration: 0.35, ease: "power2.out", delay: 0.08 })
+    }
+
+    setIdx(nextIdx)
+  }, []) // stable — no deps
+
+  // Stable — no deps
+  const startProgress = useCallback((slideIdx: number) => {
+    const ss = slidesRef.current
+    if (!ss[slideIdx]) return
+    const bar = progressEls.current[slideIdx]
+    if (!bar) return
+
+    progressTween.current?.kill()
+    gsap.set(bar, { scaleX: 0 })
+    progressTween.current = gsap.to(bar, {
+      scaleX: 1,
+      duration: ss[slideIdx].duration_ms / 1000,
+      ease: "none",
+      onStart: () => {
+        if (pausedRef.current) progressTween.current?.pause()
+      },
+      onComplete: () => {
+        const next = idxRef.current + 1
+        if (next >= slidesRef.current.length) {
+          onCloseRef.current()
+        } else {
+          navigateTo(next, 1)
+        }
+      },
+    })
+  }, [navigateTo]) // navigateTo is stable so this is too
+
+  // Init once on mount — set initial visibility, start first progress
   useEffect(() => {
     slideEls.current.forEach((el, i) => {
       if (el) gsap.set(el, { opacity: i === initialIndex ? 1 : 0, x: 0, scale: 1 })
@@ -36,82 +115,35 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
     progressEls.current.forEach((el) => {
       if (el) gsap.set(el, { scaleX: 0 })
     })
+    startProgress(initialIndex)
+    return () => { progressTween.current?.kill() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startProgress = useCallback((slideIdx: number) => {
-    const bar = progressEls.current[slideIdx]
-    if (!bar || !slides[slideIdx]) return
-    progressTween.current?.kill()
-    gsap.set(bar, { scaleX: 0 })
-    progressTween.current = gsap.to(bar, {
-      scaleX: 1,
-      duration: slides[slideIdx].duration_ms / 1000,
-      ease: "none",
-      paused: pausedRef.current,
-      onComplete: () => {
-        const next = idxRef.current + 1
-        if (next >= slides.length) {
-          onClose()
-        } else {
-          navigateTo(next, 1)
-        }
-      },
-    })
-  }, [slides, onClose]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Start progress when idx changes
+  // When idx changes via navigateTo → start next slide's progress
+  // Skip first render (handled by init above)
+  const isFirstRender = useRef(true)
   useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
     startProgress(idx)
-    return () => { progressTween.current?.kill() }
   }, [idx, startProgress])
 
-  // Pause / resume
+  // Pause / resume tween
   useEffect(() => {
-    if (paused) {
-      progressTween.current?.pause()
-    } else {
-      progressTween.current?.resume()
-    }
+    if (paused) progressTween.current?.pause()
+    else progressTween.current?.resume()
   }, [paused])
 
-  const navigateTo = useCallback((nextIdx: number, dir: 1 | -1) => {
-    if (nextIdx < 0 || nextIdx >= slides.length) return
-    const curIdx = idxRef.current
-    progressTween.current?.kill()
-
-    // Sync progress bars
-    progressEls.current.forEach((el, i) => {
-      if (!el) return
-      gsap.set(el, { scaleX: i < nextIdx ? 1 : 0 })
-    })
-
-    // Hide non-participating slides
-    slideEls.current.forEach((el, i) => {
-      if (i !== curIdx && i !== nextIdx && el) {
-        gsap.set(el, { opacity: 0, x: 0, scale: 1 })
-      }
-    })
-
-    const curEl = slideEls.current[curIdx]
-    const nextEl = slideEls.current[nextIdx]
-    const transition = slides[curIdx]?.transition ?? "fade"
-
-    if (transition === "fade") {
-      if (curEl) gsap.to(curEl, { opacity: 0, duration: 0.35, ease: "power2.in" })
-      if (nextEl) gsap.fromTo(nextEl, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" })
-    } else if (transition === "slide") {
-      const toX = dir > 0 ? "-100%" : "100%"
-      const fromX = dir > 0 ? "100%" : "-100%"
-      if (curEl) gsap.to(curEl, { x: toX, duration: 0.4, ease: "power2.inOut" })
-      if (nextEl) gsap.fromTo(nextEl, { opacity: 1, x: fromX }, { x: "0%", duration: 0.4, ease: "power2.inOut" })
-    } else {
-      // zoom
-      if (curEl) gsap.to(curEl, { opacity: 0, scale: 0.94, duration: 0.4, ease: "power2.in" })
-      if (nextEl) gsap.fromTo(nextEl, { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" })
+  // Keyboard nav
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") navigateTo(idxRef.current + 1, 1)
+      else if (e.key === "ArrowLeft") navigateTo(idxRef.current - 1, -1)
+      else if (e.key === " ") { e.preventDefault(); setPaused((p) => !p) }
+      else if (e.key === "Escape") onCloseRef.current()
     }
-
-    setIdx(nextIdx)
-  }, [slides])
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [navigateTo])
 
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -121,34 +153,21 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
     else setPaused((p) => !p)
   }
 
-  // Keyboard navigation
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") navigateTo(idxRef.current + 1, 1)
-      else if (e.key === "ArrowLeft") navigateTo(idxRef.current - 1, -1)
-      else if (e.key === " ") { e.preventDefault(); setPaused((p) => !p) }
-      else if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [navigateTo, onClose])
-
   const current = slides[idx]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
-      {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Phone frame */}
       <div
         className="relative z-10 overflow-hidden rounded-[44px] border-[6px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
-        style={{ width: 340, height: 604 }}
+        style={{ width: 360, height: 640 }}
       >
         {/* Notch */}
         <div className="absolute left-1/2 top-3 z-30 h-[18px] w-24 -translate-x-1/2 rounded-full bg-zinc-800" />
 
-        {/* Slide images — all stacked, GSAP manages visibility */}
+        {/* All slides stacked — loading="eager" on all so hidden slides pre-load */}
         {slides.map((slide, i) => (
           <div
             key={slide.id}
@@ -165,18 +184,18 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
                 blurDataURL={shimmerPlaceholder}
                 className="object-cover"
                 unoptimized
-                priority={i === initialIndex}
+                loading="eager"
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-zinc-900">
-                <span className="text-zinc-600 text-sm">No image</span>
+                <span className="text-sm text-zinc-600">No image</span>
               </div>
             )}
           </div>
         ))}
 
         {/* Gradient overlays */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-black/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-black/70 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-40 bg-gradient-to-t from-black/70 to-transparent" />
 
         {/* Progress bars */}
@@ -197,8 +216,8 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 ring-2 ring-white/20">
             <span className="text-[11px] font-bold text-white">V</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-white leading-none">vault</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold leading-none text-white">vault</p>
             <p className="mt-0.5 text-[10px] text-white/50">now</p>
           </div>
           <button
@@ -216,7 +235,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
         </div>
 
         {/* Tap zones */}
-        <div className="absolute inset-0 z-20 flex" onClick={handleTap} style={{ cursor: "default" }}>
+        <div className="absolute inset-0 z-20 flex" onClick={handleTap}>
           <div className="h-full w-[35%]" />
           <div className="h-full flex-1" />
           <div className="h-full w-[35%]" />
@@ -224,7 +243,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
 
         {/* Pause overlay */}
         {paused && (
-          <div className="pointer-events-none absolute inset-0 z-25 flex items-center justify-center">
+          <div className="pointer-events-none absolute inset-0 z-[25] flex items-center justify-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
               <Pause className="size-6 text-white" />
             </div>
@@ -240,7 +259,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
           </div>
         )}
 
-        {/* Music badge placeholder */}
+        {/* Music badge */}
         <div className="absolute bottom-8 left-4 z-30">
           <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
             <Music className="size-3 text-white/70" />
