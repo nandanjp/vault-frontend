@@ -14,6 +14,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json()
 }
 
+export function useMediaItem(id: string) {
+  return useQuery<Image>({
+    queryKey: ["media", "item", id],
+    queryFn: () => apiFetch(`/api/media/${id}`),
+    staleTime: 30_000,
+  })
+}
+
 export function useMedia(page: number, limit = 20) {
   return useQuery<ImagePage>({
     queryKey: ["media", page, limit],

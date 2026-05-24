@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
-import { Trash2, AlertCircle, Clock, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { Trash2, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,32 +30,50 @@ interface ImageCardProps {
 export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
   const isReady = image.status === "ready"
   const isFailed = image.status === "failed"
-  const isProcessing = image.status === "processing" || image.status === "pending"
+  const isPending = image.status === "pending"
+  const isProcessing = image.status === "processing"
+  const canDelete = isReady || isFailed || isPending
+  const [imgLoaded, setImgLoaded] = useState(false)
+
+  const imageArea = (
+    <div className="aspect-square w-full overflow-hidden bg-muted">
+      {isReady && image.url ? (
+        <Image
+          src={image.url}
+          alt={image.filename}
+          width={image.width ?? 400}
+          height={image.height ?? 400}
+          className={cn(
+            "h-full w-full object-cover transition-all duration-500 group-hover:scale-105",
+            imgLoaded ? "opacity-100" : "opacity-0"
+          )}
+          onLoad={() => setImgLoaded(true)}
+          unoptimized
+          loading="lazy"
+        />
+      ) : isFailed ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+          <AlertCircle className="size-8 text-destructive/60" />
+          <span className="text-xs">Processing failed</span>
+        </div>
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin opacity-40" />
+          <span className="text-xs">Processing…</span>
+        </div>
+      )}
+    </div>
+  )
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-border/50 bg-card transition-all hover:border-border hover:shadow-md">
-      <div className="aspect-square w-full overflow-hidden bg-muted">
-        {isReady && image.url ? (
-          <Image
-            src={image.url}
-            alt={image.filename}
-            width={image.width ?? 400}
-            height={image.height ?? 400}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            unoptimized
-          />
-        ) : isFailed ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <AlertCircle className="size-8 text-destructive/60" />
-            <span className="text-xs">Processing failed</span>
-          </div>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <Loader2 className="size-8 animate-spin opacity-40" />
-            <span className="text-xs">Processing…</span>
-          </div>
-        )}
-      </div>
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md">
+      {isReady ? (
+        <Link href={`/images/${image.id}`} className="block">
+          {imageArea}
+        </Link>
+      ) : (
+        imageArea
+      )}
 
       <div className="p-3">
         <p className="truncate text-sm font-medium" title={image.filename}>
@@ -69,8 +89,13 @@ export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
         </div>
       </div>
 
-      {isReady && (
-        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
+      {canDelete && (
+        <div
+          className={cn(
+            "absolute right-2 top-2 transition-opacity",
+            isReady ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+          )}
+        >
           <AlertDialog>
             <AlertDialogTrigger
               render={
@@ -88,8 +113,8 @@ export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete image?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  <span className="font-medium">{image.filename}</span> will be permanently removed.
-                  This cannot be undone.
+                  <span className="font-medium">{image.filename}</span> will be permanently
+                  removed. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -106,9 +131,7 @@ export function ImageCard({ image, onDelete, isDeleting }: ImageCardProps) {
         </div>
       )}
 
-      {isProcessing && (
-        <div className="absolute inset-0 bg-background/10" />
-      )}
+      {isProcessing && <div className="absolute inset-0 bg-background/10" />}
     </div>
   )
 }
@@ -121,22 +144,21 @@ function StatusBadge({ status }: { status: ImageModel["status"] }) {
       className={cn(
         "text-xs",
         status === "failed" && "border-destructive/30 bg-destructive/10 text-destructive",
-        (status === "processing" || status === "pending") && "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+        (status === "processing" || status === "pending") &&
+          "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
         status === "deleted" && "opacity-50"
       )}
     >
-      {status === "pending" || status === "processing" ? (
-        <><Clock className="mr-1 size-2.5" />{status}</>
-      ) : status}
+      {status}
     </Badge>
   )
 }
 
 export function ImageCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/50">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <Skeleton className="aspect-square w-full rounded-none" />
-      <div className="p-3 space-y-2">
+      <div className="space-y-2 p-3">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/4" />
       </div>
