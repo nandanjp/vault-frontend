@@ -128,7 +128,7 @@ function FavStrip({ image }: { image: { id: string; url?: string; thumbnail_url?
           alt={image.filename}
           fill
           onLoad={() => setLoaded(true)}
-          className={cn("object-cover transition-[opacity,transform] duration-300", loaded && "group-hover:scale-105")}
+          className={cn("object-cover transition-[opacity,transform,scale] duration-300", loaded && "group-hover:scale-105")}
         />
       )}
     </Link>
@@ -149,7 +149,7 @@ function AlbumCard({ album }: { album: { id: string; name: string; image_count: 
             alt={album.name}
             fill
             onLoad={() => setLoaded(true)}
-            className={cn("object-cover transition-[opacity,transform] duration-300", loaded && "group-hover:scale-105")}
+            className={cn("object-cover transition-[opacity,transform,scale] duration-300", loaded && "group-hover:scale-105")}
           />
         ) : (
           <div className="flex h-full items-center justify-center">

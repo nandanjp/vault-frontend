@@ -301,7 +301,7 @@ function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
         alt={img.filename}
         fill
         onLoad={() => setLoaded(true)}
-        className={cn("object-cover transition-[opacity,transform] duration-500", loaded && "hover:scale-105")}
+        className={cn("object-cover transition-[opacity,transform,scale] duration-500", loaded && "hover:scale-105")}
       />
     </div>
   )

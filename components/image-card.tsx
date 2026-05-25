@@ -57,7 +57,7 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
             width={image.width ?? 400}
             height={image.height ?? 400}
             onLoad={() => setImgLoaded(true)}
-            className={cn("h-full w-full object-cover transition-[opacity,transform] duration-300", imgLoaded && "group-hover:scale-105")}
+            className={cn("h-full w-full object-cover transition-[opacity,transform,scale] duration-300", imgLoaded && "group-hover:scale-105")}
             loading="lazy"
           />
           {/* Filename overlay — slides up on hover */}

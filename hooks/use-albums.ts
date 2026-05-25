@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiFetch } from "@/lib/client-fetch"
+import { normalizeImage } from "@/lib/url-cache"
 import type { Album, ImagePage } from "@/lib/api"
 
 export function useAlbums() {
@@ -19,6 +20,7 @@ export function useAlbumImages(id: string, page: number, limit = 20) {
     queryFn: () => apiFetch(`/api/albums/${id}/images?page=${page}&limit=${limit}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    select: (data) => ({ ...data, items: data.items.map(normalizeImage) }),
   })
 }
 

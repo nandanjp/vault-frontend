@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiFetch } from "@/lib/client-fetch"
+import { normalizeImage } from "@/lib/url-cache"
 import type { Image, ImagePage } from "@/lib/api"
 
 export function useMediaItem(id: string) {
@@ -10,6 +11,7 @@ export function useMediaItem(id: string) {
     queryKey: ["media", "item", id],
     queryFn: () => apiFetch(`/api/media/${id}`),
     staleTime: 30_000,
+    select: normalizeImage,
   })
 }
 
@@ -19,6 +21,7 @@ export function useMedia(page: number, limit = 20) {
     queryFn: () => apiFetch(`/api/media?page=${page}&limit=${limit}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    select: (data) => ({ ...data, items: data.items.map(normalizeImage) }),
     // Auto-poll while any image is still processing so the dashboard
     // updates without requiring the upload page to remain mounted.
     refetchInterval: (query) => {

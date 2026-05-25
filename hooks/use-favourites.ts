@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiFetch } from "@/lib/client-fetch"
+import { normalizeImage } from "@/lib/url-cache"
 import type { Image, ImagePage } from "@/lib/api"
 
 export function useFavourites(page = 1, limit = 20) {
@@ -11,6 +12,7 @@ export function useFavourites(page = 1, limit = 20) {
     queryFn: () => apiFetch(`/api/favourites?page=${page}&limit=${limit}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    select: (data) => ({ ...data, items: data.items.map(normalizeImage) }),
   })
 }
 
