@@ -1,10 +1,9 @@
-import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 import { backendApi } from "@/lib/api"
+import { getAuthToken } from "@/lib/bff-auth"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const jar = await cookies()
-  const token = jar.get("vault_token")?.value
+  const token = await getAuthToken()
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {

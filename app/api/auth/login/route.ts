@@ -1,6 +1,7 @@
-import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 import { authApi } from "@/lib/api"
+import { cookies } from "next/headers"
+import { tokenCookieOpts, refreshCookieOpts, TOKEN_COOKIE, REFRESH_COOKIE } from "@/lib/bff-auth"
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,18 +9,8 @@ export async function POST(req: NextRequest) {
     const pair = await authApi.login(email, password)
 
     const jar = await cookies()
-    jar.set("vault_token", pair.access_token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: pair.expires_in,
-    })
-    jar.set("vault_refresh", pair.refresh_token, {
-      httpOnly: true,
-      sameSite: "strict",
-      path: "/api/auth/refresh",
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    jar.set(TOKEN_COOKIE, pair.access_token, tokenCookieOpts(pair.expires_in))
+    jar.set(REFRESH_COOKIE, pair.refresh_token, refreshCookieOpts)
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
