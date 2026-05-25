@@ -216,7 +216,7 @@ export default function AlbumDetailPage() {
   )
 }
 
-type BentoImg = { url: string; filename: string }
+type BentoImg = { url: string; thumbnail_url?: string; filename: string }
 
 function BentoHero({ images }: { images: BentoImg[] }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -293,13 +293,15 @@ function BentoGrid({ images }: { images: BentoImg[] }) {
 }
 
 function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
+  const [loaded, setLoaded] = useState(false)
   return (
     <div data-bento className={cn("relative overflow-hidden bg-muted", className)}>
       <VaultImage
-        src={img.url}
+        src={img.thumbnail_url ?? img.url}
         alt={img.filename}
         fill
-        className="object-cover transition-[opacity,transform,scale] duration-500 hover:scale-105"
+        onLoad={() => setLoaded(true)}
+        className={cn("object-cover transition-[opacity,transform] duration-500", loaded && "hover:scale-105")}
       />
     </div>
   )

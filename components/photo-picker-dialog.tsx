@@ -114,7 +114,7 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
                 )}
               >
                 <VaultImage
-                  src={img.url!}
+                  src={img.thumbnail_url ?? img.url!}
                   alt={img.filename}
                   fill
                   className="object-cover"

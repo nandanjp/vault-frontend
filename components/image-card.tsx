@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Trash2, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,7 @@ interface ImageCardProps {
 }
 
 export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle = "Delete image?", confirmDescription, confirmLabel = "Delete" }: ImageCardProps) {
+  const [imgLoaded, setImgLoaded] = useState(false)
   const defaultDesc = `${image.filename} will be permanently deleted from storage and removed from all albums, stories, and favourites. This cannot be undone.`
   const resolvedDesc = confirmDescription ?? defaultDesc
   const isReady     = image.status === "ready"
@@ -54,7 +56,8 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
             alt={image.filename}
             width={image.width ?? 400}
             height={image.height ?? 400}
-            className="h-full w-full object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105"
+            onLoad={() => setImgLoaded(true)}
+            className={cn("h-full w-full object-cover transition-[opacity,transform] duration-300", imgLoaded && "group-hover:scale-105")}
             loading="lazy"
           />
           {/* Filename overlay — slides up on hover */}

@@ -78,13 +78,13 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
           className="absolute inset-0"
           style={{ opacity: i === 0 ? 1 : 0 }}
         >
-          {/* Blurred background — fills the container regardless of image orientation */}
-          {image.url && (
+          {/* Blurred background — thumbnail is fine here since it's blurred anyway */}
+          {(image.thumbnail_url ?? image.url) && (
             <div
               className="absolute inset-0 overflow-hidden"
               style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)", transform: "scale(1.1)" }}
             >
-              <VaultImage src={image.url} alt="" fill className="object-cover" aria-hidden />
+              <VaultImage src={image.thumbnail_url ?? image.url!} alt="" fill className="object-cover" aria-hidden />
             </div>
           )}
 
@@ -93,9 +93,9 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
             href={`/images/${image.id}`}
             className="absolute inset-0 flex items-center justify-center p-8"
           >
-            {image.url && (
+            {(image.thumbnail_url ?? image.url) && (
               <VaultImage
-                src={image.url}
+                src={image.thumbnail_url ?? image.url!}
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}

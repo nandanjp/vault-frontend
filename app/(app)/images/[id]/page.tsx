@@ -207,7 +207,7 @@ export default function ImageDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Image panel */}
         <div className="relative">
-          {/* Ambient glow — revealed only after main image loads to prevent flash */}
+          {/* Ambient glow — thumbnail is fine here since it's blurred */}
           {image?.status === "ready" && image.url && (
             <div
               className={cn(
@@ -216,7 +216,7 @@ export default function ImageDetailPage() {
               )}
               style={{ transform: "scale(1.15)" }}
             >
-              <VaultImage src={image.url} alt="" fill className="object-cover" aria-hidden />
+              <VaultImage src={image.thumbnail_url ?? image.url} alt="" fill className="object-cover" aria-hidden />
             </div>
           )}
         <div className="overflow-hidden rounded-xl border border-border bg-muted">
@@ -225,7 +225,7 @@ export default function ImageDetailPage() {
           ) : image?.status === "ready" && image.url ? (
             <div className="flex min-h-96 items-center justify-center p-6">
               <VaultImage
-                src={image.url}
+                src={image.thumbnail_url ?? image.url}
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}

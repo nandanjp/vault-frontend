@@ -36,7 +36,7 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
 
   const imagePreview = image?.url ? (
     <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted shadow-sm">
-      <VaultImage src={image.url} alt={image.filename} fill className="object-cover" />
+      <VaultImage src={image.thumbnail_url ?? image.url} alt={image.filename} fill className="object-cover" />
     </div>
   ) : null
 

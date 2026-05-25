@@ -207,7 +207,7 @@ function DiscoveryCard({ photo }: { photo: ImageModel }) {
       <div className="relative overflow-hidden" style={aspectStyle}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo.url!}
+          src={photo.thumbnail_url ?? photo.url!}
           alt=""
           loading="lazy"
           onLoad={() => setLoaded(true)}

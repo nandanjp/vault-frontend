@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
 import { Upload, FolderOpen, Heart, Images, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -114,18 +114,21 @@ function Section({
   )
 }
 
-function FavStrip({ image }: { image: { id: string; url?: string; filename: string; width?: number; height?: number } }) {
+function FavStrip({ image }: { image: { id: string; url?: string; thumbnail_url?: string; filename: string; width?: number; height?: number } }) {
+  const [loaded, setLoaded] = useState(false)
+  const src = image.thumbnail_url ?? image.url
   return (
     <Link
       href={`/images/${image.id}`}
       className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
     >
-      {image.url && (
+      {src && (
         <VaultImage
-          src={image.url}
+          src={src}
           alt={image.filename}
           fill
-          className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
+          onLoad={() => setLoaded(true)}
+          className={cn("object-cover transition-[opacity,transform] duration-300", loaded && "group-hover:scale-105")}
         />
       )}
     </Link>
@@ -133,6 +136,7 @@ function FavStrip({ image }: { image: { id: string; url?: string; filename: stri
 }
 
 function AlbumCard({ album }: { album: { id: string; name: string; image_count: number; cover_url?: string } }) {
+  const [loaded, setLoaded] = useState(false)
   return (
     <Link
       href={`/albums/${album.id}`}
@@ -144,7 +148,8 @@ function AlbumCard({ album }: { album: { id: string; name: string; image_count: 
             src={album.cover_url}
             alt={album.name}
             fill
-            className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
+            onLoad={() => setLoaded(true)}
+            className={cn("object-cover transition-[opacity,transform] duration-300", loaded && "group-hover:scale-105")}
           />
         ) : (
           <div className="flex h-full items-center justify-center">

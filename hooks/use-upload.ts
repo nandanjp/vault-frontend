@@ -98,6 +98,7 @@ export function useUpload() {
               clearInterval(intervalsRef.current.get(item.localId))
               intervalsRef.current.delete(item.localId)
               qc.invalidateQueries({ queryKey: ["media"] })
+              qc.invalidateQueries({ queryKey: ["gallery"] })
             } else if (status === "failed") {
               patch(item.localId, { status: "failed", error: "Processing failed" })
               clearInterval(intervalsRef.current.get(item.localId))
