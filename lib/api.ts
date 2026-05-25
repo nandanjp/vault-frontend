@@ -265,6 +265,6 @@ export const backendApi = {
   searchSpotify: (token: string, q: string) =>
     request<{ tracks: SpotifyTrack[] }>(`${BACKEND_URL}/api/spotify/search?q=${encodeURIComponent(q)}`, {}, token),
 
-  publicGallery: () =>
-    request<{ items: Image[] }>(`${BACKEND_URL}/public/gallery`),
+  publicGallery: (limit = 20) =>
+    request<{ items: Image[]; total: number }>(`${BACKEND_URL}/public/gallery?limit=${limit}`),
 }

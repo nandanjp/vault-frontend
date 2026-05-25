@@ -43,6 +43,11 @@
   50% { transform: translateY(-20px); }
 }
 
+@keyframes musicBar {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

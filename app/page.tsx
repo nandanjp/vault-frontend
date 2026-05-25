@@ -1,28 +1,61 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import Link from "next/link"
-import { ArrowRight, Lock, Zap, Globe } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Image as ImageModel } from "@/lib/api"
 
+const PAGE_SIZE = 20
+
 export default function LandingPage() {
   const [photos, setPhotos] = useState<ImageModel[]>([])
+  const [total, setTotal] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const seenIds = useRef(new Set<string>())
 
+  const loadMore = useCallback(async () => {
+    if (loading) return
+    if (total !== null && seenIds.current.size >= total) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/public/gallery?limit=${PAGE_SIZE}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const fresh = (data.items ?? []).filter(
+        (p: ImageModel) => p.status === "ready" && p.url && !seenIds.current.has(p.id)
+      )
+      fresh.forEach((p: ImageModel) => seenIds.current.add(p.id))
+      setPhotos((prev) => [...prev, ...fresh])
+      setTotal(data.total ?? null)
+    } finally {
+      setLoading(false)
+    }
+  }, [loading, total])
+
+  // Initial load
+  useEffect(() => { loadMore() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Infinite scroll via IntersectionObserver
   useEffect(() => {
-    fetch("/api/public/gallery")
-      .then((r) => r.ok ? r.json() : { items: [] })
-      .then((d) => setPhotos(d.items ?? []))
-      .catch(() => {})
-  }, [])
+    const el = sentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore() },
+      { rootMargin: "400px" }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [loadMore])
+
+  const exhausted = total !== null && seenIds.current.size >= total
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <Hero />
-      <Features />
-      <Discovery photos={photos} />
-      <Footer />
+      <Discovery photos={photos} loading={loading} exhausted={exhausted} sentinelRef={sentinelRef} />
     </div>
   )
 }
@@ -50,11 +83,8 @@ function Nav() {
 }
 
 function Hero() {
-  const headingRef = useRef<HTMLHeadingElement>(null)
-
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 text-center">
-      {/* Subtle radial gradient backdrop */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -63,7 +93,6 @@ function Hero() {
         }}
       />
 
-      {/* Floating orbs */}
       <Orb className="left-[10%] top-[20%] size-72 bg-primary/5" delay={0} />
       <Orb className="right-[8%] top-[35%] size-96 bg-primary/4" delay={1.2} />
       <Orb className="left-[25%] bottom-[15%] size-64 bg-primary/3" delay={0.6} />
@@ -74,10 +103,7 @@ function Hero() {
           Self-hosted · Private · Yours forever
         </div>
 
-        <h1
-          ref={headingRef}
-          className="bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-6xl font-bold tracking-tight text-transparent sm:text-7xl lg:text-8xl"
-        >
+        <h1 className="bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-6xl font-bold tracking-tight text-transparent sm:text-7xl lg:text-8xl">
           Your images,
           <br />
           beautifully stored.
@@ -94,7 +120,7 @@ function Hero() {
             className="group flex items-center gap-2 rounded-xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-80"
           >
             Start for free
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="size-4 transition-[transform,translate] group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="/login"
@@ -105,7 +131,6 @@ function Hero() {
         </div>
       </div>
 
-      {/* Scroll hint */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-muted-foreground/40">
         <span className="text-[11px] uppercase tracking-widest">Discover</span>
         <div className="h-8 w-px bg-gradient-to-b from-muted-foreground/30 to-transparent" />
@@ -123,48 +148,14 @@ function Orb({ className, delay }: { className?: string; delay: number }) {
   )
 }
 
-function Features() {
-  const items = [
-    {
-      icon: Lock,
-      title: "Fully private",
-      body: "Your images live on your own infrastructure. No third-party cloud, no tracking.",
-    },
-    {
-      icon: Zap,
-      title: "Instant delivery",
-      body: "MinIO-backed object storage with presigned URLs means blazing-fast image delivery.",
-    },
-    {
-      icon: Globe,
-      title: "Rich organisation",
-      body: "Albums, favourites, and animated stories — every way you'd want to organise your library.",
-    },
-  ]
-
-  return (
-    <section className="mx-auto max-w-5xl px-6 py-24">
-      <div className="grid gap-6 sm:grid-cols-3">
-        {items.map(({ icon: Icon, title, body }) => (
-          <div
-            key={title}
-            className="rounded-2xl border border-border/60 bg-card/50 p-6 backdrop-blur-sm"
-          >
-            <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-              <Icon className="size-5 text-primary" />
-            </div>
-            <h3 className="mb-2 font-semibold">{title}</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
+interface DiscoveryProps {
+  photos: ImageModel[]
+  loading: boolean
+  exhausted: boolean
+  sentinelRef: React.RefObject<HTMLDivElement | null>
 }
 
-function Discovery({ photos }: { photos: ImageModel[] }) {
-  const ready = photos.filter((p) => p.status === "ready" && p.url)
-
+function Discovery({ photos, loading, exhausted, sentinelRef }: DiscoveryProps) {
   return (
     <section className="px-4 pb-24 sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -175,23 +166,32 @@ function Discovery({ photos }: { photos: ImageModel[] }) {
           </p>
         </div>
 
-        {ready.length === 0 ? (
+        {photos.length === 0 && !loading ? (
           <EmptyDiscovery />
         ) : (
-          <MasonryGrid photos={ready} />
+          <>
+            <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
+              {photos.map((photo) => (
+                <DiscoveryCard key={photo.id} photo={photo} />
+              ))}
+            </div>
+
+            {/* Sentinel + loading indicator */}
+            {!exhausted && (
+              <div ref={sentinelRef} className="mt-8 flex justify-center">
+                {loading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:0ms]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:150ms]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:300ms]" />
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
-  )
-}
-
-function MasonryGrid({ photos }: { photos: ImageModel[] }) {
-  return (
-    <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
-      {photos.map((photo) => (
-        <DiscoveryCard key={photo.id} photo={photo} />
-      ))}
-    </div>
   )
 }
 
@@ -233,13 +233,5 @@ function EmptyDiscovery() {
         Create an account
       </Link>
     </div>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-border/40 px-6 py-8 text-center text-xs text-muted-foreground/50">
-      © {new Date().getFullYear()} Vault · Self-hosted image storage
-    </footer>
   )
 }

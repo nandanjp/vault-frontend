@@ -2,6 +2,23 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { X, Music, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react"
+
+function MusicBars() {
+  return (
+    <div className="flex shrink-0 items-end gap-[2px]" style={{ height: 12 }}>
+      {[3, 5, 4, 3].map((h, i) => (
+        <span
+          key={i}
+          className="w-[2px] rounded-full bg-emerald-400"
+          style={{
+            height: h * 2,
+            animation: `musicBar 0.8s ease-in-out ${i * 0.12}s infinite alternate`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
 import { cn } from "@/lib/utils"
 import type { StorySlide, SpotifyTrack } from "@/lib/api"
 import gsap from "@/lib/gsap"
@@ -174,14 +191,18 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
+      {/* Hidden audio element for tracks that still have preview_url */}
       {track?.preview_url && (
         <audio ref={audioRef} src={track.preview_url} preload="auto" loop />
       )}
       <div className="absolute inset-0" onClick={onClose} />
 
+      {/* Phone + music player stacked */}
+      <div className="relative z-10 flex flex-col items-center gap-3">
+
       {/* Phone frame — 300×650 ≈ iPhone 16 aspect ratio (9:19.5) */}
       <div
-        className="relative z-10 overflow-hidden rounded-[42px] border-[5px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
+        className="relative overflow-hidden rounded-[42px] border-[5px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
         style={{ width: 300, height: 650 }}
       >
         {/* Notch */}
@@ -276,11 +297,15 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
           </div>
         )}
 
-        {/* Music badge */}
+        {/* Music badge — animated bars when audio is playing */}
         {track && (
           <div className="absolute bottom-7 left-3 z-30 max-w-[calc(100%-24px)]">
             <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
-              <Music className="size-3 shrink-0 text-white/70" />
+              {!paused ? (
+                <MusicBars />
+              ) : (
+                <Music className="size-3 shrink-0 text-white/70" />
+              )}
               <span className="truncate text-[11px] text-white/70">
                 {track.name} · {track.artists[0]}
               </span>
@@ -288,6 +313,23 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
           </div>
         )}
       </div>
+
+      {/* Spotify embed — plays 30s preview for any track */}
+      {track && (
+        <div className="overflow-hidden rounded-2xl shadow-xl" style={{ width: 300 }}>
+          <iframe
+            key={track.id}
+            src={`https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0`}
+            width="300"
+            height="80"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="eager"
+            style={{ border: "none", display: "block" }}
+          />
+        </div>
+      )}
+
+      </div>{/* end phone + music wrapper */}
 
       {/* External nav arrows */}
       <button
