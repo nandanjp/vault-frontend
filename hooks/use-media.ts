@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiFetch } from "@/lib/client-fetch"
-import { normalizeImage } from "@/lib/url-cache"
+import { normalizeImage, evictImage } from "@/lib/url-cache"
 import type { Image, ImagePage } from "@/lib/api"
 
 export function useMediaItem(id: string) {
@@ -41,18 +41,34 @@ export function useDeleteMedia() {
     mutationFn: (id: string) =>
       apiFetch(`/api/media/${id}`, { method: "DELETE" }),
     onSuccess: (_data, id) => {
-      // Only update list-shaped cache entries — the item cache (["media","item",id])
-      // is an Image object (no .items), so we guard before calling .filter().
-      qc.setQueriesData<ImagePage>({ queryKey: ["media"] }, (old) => {
+      const filterPage = (old: ImagePage | undefined) => {
         if (!old || !("items" in old)) return old
-        return {
-          ...old,
-          items: old.items.filter((img: Image) => img.id !== id),
-          total: old.total - 1,
-        }
-      })
-      // Drop the single-item cache so navigating back fetches fresh data.
+        const items = old.items.filter((img: Image) => img.id !== id)
+        if (items.length === old.items.length) return old // wasn't in this list
+        return { ...old, items, total: old.total - 1 }
+      }
+
+      // All Photos (paginated ImagePage entries)
+      qc.setQueriesData<ImagePage>({ queryKey: ["media"] }, filterPage)
+      // Single-item detail cache
       qc.removeQueries({ queryKey: ["media", "item", id] })
+
+      // Dashboard gallery carousel (Image[])
+      qc.setQueriesData<Image[]>({ queryKey: ["gallery"] }, (old) =>
+        old ? old.filter((img) => img.id !== id) : old
+      )
+
+      // Favourites (paginated ImagePage entries)
+      qc.setQueriesData<ImagePage>({ queryKey: ["favourites"] }, filterPage)
+
+      // Album image lists — ["albums", albumId, "images", page, limit]
+      // The plain ["albums"] list query returns Album[], not ImagePage, so the
+      // "items" in old guard inside filterPage safely skips it.
+      qc.setQueriesData<ImagePage>({ queryKey: ["albums"] }, filterPage)
+
+      // Drop from URL cache so a re-upload of a same-named file doesn't reuse stale URL
+      evictImage(id)
+
       toast.success("Image deleted")
     },
     onError: (err: Error) => {

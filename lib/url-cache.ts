@@ -49,3 +49,7 @@ export function normalizeImage<T extends { id: string; url?: string; thumbnail_u
   _cache.set(img.id, { url: img.url, thumbnail_url: img.thumbnail_url, exp: incomingExp })
   return img
 }
+
+export function evictImage(id: string) {
+  _cache.delete(id)
+}
