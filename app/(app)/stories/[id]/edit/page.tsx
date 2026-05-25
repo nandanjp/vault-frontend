@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
-  Check, Images, Pencil, Search, X, Pause,
+  Check, Images, Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useStory, useUpdateStory } from "@/hooks/use-stories"
 import { useMedia } from "@/hooks/use-media"
 import { StoryPlayer } from "@/components/story-player"
+import { SpotifyPickerDialog } from "@/components/spotify-picker-dialog"
 import { VaultImage } from "@/components/vault-image"
 import type { StorySlide, StoryTransition, SlideInput, SpotifyTrack } from "@/lib/api"
 
@@ -104,6 +105,7 @@ export default function StoryEditPage() {
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null)
   const [activeIdx, setActiveIdx] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [musicOpen, setMusicOpen] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved")
   const [editingTitle, setEditingTitle] = useState(false)
@@ -351,9 +353,9 @@ export default function StoryEditPage() {
 
           {/* Story music section — always visible */}
           <div className="border-t border-border p-5">
-            <SpotifySection
+            <MusicSection
               selectedTrack={selectedTrack}
-              onSelect={handleSelectTrack}
+              onOpen={() => setMusicOpen(true)}
               onRemove={handleRemoveTrack}
             />
           </div>
@@ -365,6 +367,17 @@ export default function StoryEditPage() {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onAdd={handleAddImages}
+      />
+
+      {/* Music picker */}
+      <SpotifyPickerDialog
+        open={musicOpen}
+        onOpenChange={setMusicOpen}
+        selectedTrack={selectedTrack}
+        onSelect={(track) => {
+          if (track) handleSelectTrack(track)
+          else handleRemoveTrack()
+        }}
       />
 
       {/* Story player overlay — only shown when Preview is clicked */}
@@ -380,73 +393,18 @@ export default function StoryEditPage() {
   )
 }
 
-// ---------- Spotify section ----------
+// ---------- Music section (story-level) ----------
 
-function SpotifySection({
+function MusicSection({
   selectedTrack,
-  onSelect,
+  onOpen,
   onRemove,
 }: {
   selectedTrack: SpotifyTrack | null
-  onSelect: (track: SpotifyTrack) => void
+  onOpen: () => void
   onRemove: () => void
 }) {
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SpotifyTrack[]>([])
-  const [searching, setSearching] = useState(false)
-  const [previewPlaying, setPreviewPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-
-  // Debounced search
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return }
-    setSearching(true)
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query.trim())}`)
-        if (res.ok) {
-          const data = await res.json()
-          setResults(data.tracks ?? [])
-        }
-      } finally {
-        setSearching(false)
-      }
-    }, 400)
-    return () => { clearTimeout(t); setSearching(false) }
-  }, [query])
-
-  const handleSelect = (track: SpotifyTrack) => {
-    onSelect(track)
-    setQuery("")
-    setResults([])
-    stopPreview()
-  }
-
-  const stopPreview = () => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
-    setPreviewPlaying(false)
-  }
-
-  const togglePreview = () => {
-    if (!audioRef.current || !selectedTrack?.preview_url) return
-    if (previewPlaying) {
-      audioRef.current.pause()
-      setPreviewPlaying(false)
-    } else {
-      audioRef.current.play().catch(() => {})
-      setPreviewPlaying(true)
-    }
-  }
-
-  const handleRemove = () => {
-    stopPreview()
-    onRemove()
-  }
-
-  const formatDuration = (ms: number) => {
+  const fmt = (ms: number) => {
     const s = Math.floor(ms / 1000)
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
   }
@@ -462,106 +420,49 @@ function SpotifySection({
         <div className="rounded-xl border border-border bg-muted/30 p-3">
           <div className="flex items-center gap-3">
             {selectedTrack.album_art_url && (
-              <div className="relative size-10 shrink-0 overflow-hidden rounded-md">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedTrack.album_art_url}
-                  alt={selectedTrack.album_name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selectedTrack.album_art_url}
+                alt=""
+                className="size-10 shrink-0 rounded-md object-cover"
+              />
             )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold leading-none">{selectedTrack.name}</p>
               <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                 {selectedTrack.artists.join(", ")}
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground/60 tabular-nums">
-                {formatDuration(selectedTrack.duration_ms)}
+              <p className="mt-0.5 text-[10px] text-muted-foreground/50 tabular-nums">
+                {fmt(selectedTrack.duration_ms)}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              {selectedTrack.preview_url && (
-                <>
-                  {selectedTrack.preview_url && (
-                    <audio
-                      ref={audioRef}
-                      src={selectedTrack.preview_url}
-                      preload="auto"
-                      onEnded={() => setPreviewPlaying(false)}
-                    />
-                  )}
-                  <button
-                    onClick={togglePreview}
-                    className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                    title={previewPlaying ? "Pause preview" : "Play 30s preview"}
-                  >
-                    {previewPlaying ? <Pause className="size-3 fill-primary" /> : <Play className="size-3 fill-primary" />}
-                  </button>
-                </>
-              )}
+            <div className="flex shrink-0 flex-col items-end gap-1">
               <button
-                onClick={handleRemove}
-                className="flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={onOpen}
+                className="text-[10px] text-primary hover:underline"
               >
-                <X className="size-3.5" />
+                Change
+              </button>
+              <button
+                onClick={onRemove}
+                className="text-[10px] text-muted-foreground hover:text-destructive"
+              >
+                Remove
               </button>
             </div>
           </div>
         </div>
       ) : (
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-            {searching ? (
-              <div className="size-3.5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-            ) : (
-              <Search className="size-3.5 text-muted-foreground/50" />
-            )}
+        <button
+          onClick={onOpen}
+          className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-border p-3 text-left text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+        >
+          <Music className="size-4 shrink-0" />
+          <div>
+            <p className="text-xs font-medium">Add music</p>
+            <p className="text-[10px] text-muted-foreground/60">Plays during story preview</p>
           </div>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Spotify…"
-            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-          />
-        </div>
-      )}
-
-      {/* Search results dropdown */}
-      {results.length > 0 && !selectedTrack && (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-          {results.slice(0, 6).map((track) => (
-            <button
-              key={track.id}
-              onClick={() => handleSelect(track)}
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60 first:rounded-t-xl last:rounded-b-xl"
-            >
-              {track.album_art_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={track.album_art_url}
-                  alt=""
-                  className="size-8 shrink-0 rounded-md object-cover"
-                />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium leading-none">{track.name}</p>
-                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                  {track.artists.join(", ")} · {track.album_name}
-                </p>
-              </div>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
-                {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, "0")}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!selectedTrack && !query && (
-        <p className="text-[10px] text-muted-foreground/50">
-          Add a track that plays during preview.
-        </p>
+        </button>
       )}
     </div>
   )
