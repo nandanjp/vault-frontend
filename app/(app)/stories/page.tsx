@@ -2,7 +2,6 @@
 
 import { useRef, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Clapperboard, Plus, Trash2, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -13,7 +12,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useStories, useCreateStory, useDeleteStory } from "@/hooks/use-stories"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
+import { VaultImage } from "@/components/vault-image"
 import type { Story } from "@/lib/api"
 import gsap from "@/lib/gsap"
 import { useRouter } from "next/navigation"
@@ -101,14 +100,11 @@ function StoryCard({ story }: { story: Story }) {
       <Link href={`/stories/${story.id}/edit`} className="block">
         <div className="relative w-full overflow-hidden bg-muted" style={{ aspectRatio: "9/16" }}>
           {story.cover_url ? (
-            <Image
+            <VaultImage
               src={story.cover_url}
               alt={story.title}
               fill
-              placeholder="blur"
-              blurDataURL={shimmerPlaceholder}
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+              className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">

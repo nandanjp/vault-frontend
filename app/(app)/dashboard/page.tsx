@@ -2,7 +2,6 @@
 
 import { useRef, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Upload, FolderOpen, Heart, Images, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -12,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useGallery } from "@/hooks/use-gallery"
 import { useAlbums } from "@/hooks/use-albums"
 import { useFavourites } from "@/hooks/use-favourites"
+import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 export default function DashboardPage() {
   const { data: gallery, isLoading: galleryLoading } = useGallery()
@@ -122,14 +121,11 @@ function FavStrip({ image }: { image: { id: string; url?: string; filename: stri
       className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
     >
       {image.url && (
-        <Image
+        <VaultImage
           src={image.url}
           alt={image.filename}
           fill
-          placeholder="blur"
-          blurDataURL={shimmerPlaceholder}
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          unoptimized
+          className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
         />
       )}
     </Link>
@@ -144,14 +140,11 @@ function AlbumCard({ album }: { album: { id: string; name: string; image_count: 
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         {album.cover_url ? (
-          <Image
+          <VaultImage
             src={album.cover_url}
             alt={album.name}
             fill
-            placeholder="blur"
-            blurDataURL={shimmerPlaceholder}
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            unoptimized
+            className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center">

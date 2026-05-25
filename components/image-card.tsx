@@ -1,7 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { Trash2, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import type { Image as ImageModel } from "@/lib/api"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
+import { VaultImage } from "@/components/vault-image"
 
 interface ImageCardProps {
   image: ImageModel
@@ -35,8 +33,6 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
   const isPending   = image.status === "pending"
   const isProcessing = image.status === "processing"
   const canDelete   = isReady || isFailed || isPending
-  const [imgLoaded, setImgLoaded] = useState(false)
-
   const aspectStyle = natural && image.width && image.height
     ? { aspectRatio: `${image.width}/${image.height}` }
     : undefined
@@ -48,19 +44,12 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
     >
       {isReady && image.url ? (
         <>
-          <Image
+          <VaultImage
             src={image.url}
             alt={image.filename}
             width={image.width ?? 400}
             height={image.height ?? 400}
-            placeholder="blur"
-            blurDataURL={shimmerPlaceholder}
-            className={cn(
-              "h-full w-full object-cover transition-opacity duration-300 group-hover:scale-105",
-              imgLoaded ? "opacity-100" : "opacity-0"
-            )}
-            onLoad={() => setImgLoaded(true)}
-            unoptimized
+            className="h-full w-full object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
             loading="lazy"
           />
           {/* Filename overlay — slides up on hover */}

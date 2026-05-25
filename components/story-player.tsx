@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import Image from "next/image"
 import { X, Music, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { StorySlide } from "@/lib/api"
 import gsap from "@/lib/gsap"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
+import { VaultImage } from "@/components/vault-image"
 
 interface StoryPlayerProps {
   slides: StorySlide[]
@@ -176,14 +175,11 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
             style={{ opacity: i === initialIndex ? 1 : 0 }}
           >
             {slide.url ? (
-              <Image
+              <VaultImage
                 src={slide.url}
                 alt={slide.filename}
                 fill
-                placeholder="blur"
-                blurDataURL={shimmerPlaceholder}
                 className="object-cover"
-                unoptimized
                 loading="eager"
               />
             ) : (

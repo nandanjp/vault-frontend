@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { FolderOpen, FolderPlus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,8 +12,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useAlbums, useAlbumImages, useCreateAlbum, useDeleteAlbum } from "@/hooks/use-albums"
 import type { Album } from "@/lib/api"
+import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 export default function AlbumsPage() {
   const { data: albums, isLoading } = useAlbums()
@@ -179,7 +178,7 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
 
   if (thumbs.length === 1) {
     return (
-      <Image src={thumbs[0].url} alt={thumbs[0].filename} fill placeholder="blur" blurDataURL={shimmerPlaceholder} className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
+      <VaultImage src={thumbs[0].url} alt={thumbs[0].filename} fill className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105" />
     )
   }
 
@@ -189,14 +188,11 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="relative overflow-hidden bg-muted">
           {thumbs[i] ? (
-            <Image
+            <VaultImage
               src={thumbs[i].url}
               alt={thumbs[i].filename}
               fill
-              placeholder="blur"
-              blurDataURL={shimmerPlaceholder}
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+              className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
             />
           ) : null}
         </div>

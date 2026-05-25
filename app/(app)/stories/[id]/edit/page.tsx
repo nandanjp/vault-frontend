@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback, useReducer } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import {
   ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
   Check, Images, Pencil,
@@ -15,7 +14,7 @@ import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useStory, useUpdateStory } from "@/hooks/use-stories"
 import { useMedia } from "@/hooks/use-media"
 import { StoryPlayer } from "@/components/story-player"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
+import { VaultImage } from "@/components/vault-image"
 import type { StorySlide, StoryTransition, SlideInput } from "@/lib/api"
 
 // ---------- Draft types ----------
@@ -338,14 +337,11 @@ function SlideThumb({
       onClick={onSelect}
     >
       {slide.url ? (
-        <Image
+        <VaultImage
           src={slide.url}
           alt={slide.filename}
           fill
-          placeholder="blur"
-          blurDataURL={shimmerPlaceholder}
           className="object-cover"
-          unoptimized
         />
       ) : (
         <div className="flex h-full items-center justify-center bg-muted">
@@ -408,15 +404,12 @@ function SlideView({
       <div className="relative z-10 flex h-full max-h-full w-full items-center justify-center p-10">
         {slide.url ? (
           <div className="relative h-full w-full">
-            <Image
+            <VaultImage
               key={slide.tempId}
               src={slide.url}
               alt={slide.filename}
               fill
-              placeholder="blur"
-              blurDataURL={shimmerPlaceholder}
               className="object-contain drop-shadow-2xl"
-              unoptimized
             />
           </div>
         ) : (
@@ -520,14 +513,11 @@ function SlideConfig({
       {slide.url && (
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="relative aspect-video w-full bg-muted">
-            <Image
+            <VaultImage
               src={slide.url}
               alt={slide.filename}
               fill
-              placeholder="blur"
-              blurDataURL={shimmerPlaceholder}
               className="object-cover"
-              unoptimized
             />
           </div>
           <div className="p-2.5">
@@ -650,18 +640,15 @@ function StoryImagePicker({
                 className={cn(
                   "group relative aspect-square overflow-hidden rounded-xl bg-muted transition-all duration-150",
                   selected
-                    ? "ring-2 ring-primary ring-offset-2 ring-offset-popover"
+                    ? "ring-[3px] ring-inset ring-primary"
                     : "hover:opacity-90"
                 )}
               >
-                <Image
+                <VaultImage
                   src={img.url!}
                   alt={img.filename}
                   fill
-                  placeholder="blur"
-                  blurDataURL={shimmerPlaceholder}
                   className="object-cover"
-                  unoptimized
                 />
                 <div className={cn(
                   "absolute inset-0 flex items-center justify-center transition-opacity duration-150",

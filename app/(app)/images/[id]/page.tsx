@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, Download, Trash2, AlertCircle, Loader2, Heart, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,6 +22,7 @@ import { useMediaItem, useDeleteMedia } from "@/hooks/use-media"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import { useAlbums } from "@/hooks/use-albums"
 import { AlbumPickerDialog } from "@/components/album-picker-dialog"
+import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
 
 function formatBytes(n: number) {
@@ -205,10 +205,13 @@ export default function ImageDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Image panel */}
         <div className="relative">
-          {/* Ambient glow from the image's own colours */}
+          {/* Ambient glow — revealed only after main image loads to prevent flash */}
           {image?.status === "ready" && image.url && (
             <div
-              className="pointer-events-none absolute inset-0 -z-10 rounded-2xl opacity-[0.22] blur-[60px] saturate-[2]"
+              className={cn(
+                "pointer-events-none absolute inset-0 -z-10 rounded-2xl blur-[60px] saturate-[2] transition-opacity duration-700",
+                imgLoaded ? "opacity-[0.22]" : "opacity-0"
+              )}
               style={{
                 backgroundImage: `url(${image.url})`,
                 backgroundSize: "cover",
@@ -222,17 +225,13 @@ export default function ImageDetailPage() {
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
           ) : image?.status === "ready" && image.url ? (
             <div className="flex min-h-96 items-center justify-center p-6">
-              <Image
+              <VaultImage
                 src={image.url}
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}
-                className={cn(
-                  "max-h-[72vh] w-auto rounded-lg object-contain shadow-sm transition-opacity duration-500",
-                  imgLoaded ? "opacity-100" : "opacity-0"
-                )}
+                className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm"
                 onLoad={() => setImgLoaded(true)}
-                unoptimized
                 priority
               />
             </div>

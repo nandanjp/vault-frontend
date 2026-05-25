@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { ArrowLeft, ImagePlus, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -12,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@/hooks/use-albums"
 import { useDeleteMedia } from "@/hooks/use-media"
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
+import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 const LIMIT = 20
 
@@ -302,14 +301,11 @@ function BentoGrid({ images }: { images: BentoImg[] }) {
 function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
   return (
     <div data-bento className={cn("relative overflow-hidden bg-muted", className)}>
-      <Image
+      <VaultImage
         src={img.url}
         alt={img.filename}
         fill
-        placeholder="blur"
-        blurDataURL={shimmerPlaceholder}
-        className="object-cover transition-transform duration-500 hover:scale-105"
-        unoptimized
+        className="object-cover transition-[opacity,transform] duration-500 hover:scale-105"
       />
     </div>
   )

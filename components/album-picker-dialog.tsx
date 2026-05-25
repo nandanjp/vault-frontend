@@ -1,13 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Image from "next/image"
 import { FolderOpen, Check } from "lucide-react"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
 import { useMediaItem } from "@/hooks/use-media"
+import { VaultImage } from "@/components/vault-image"
 import type { Album } from "@/lib/api"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 interface AlbumPickerDialogProps {
   open: boolean
@@ -37,15 +36,7 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
 
   const imagePreview = image?.url ? (
     <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted shadow-sm">
-      <Image
-        src={image.url}
-        alt={image.filename}
-        fill
-        placeholder="blur"
-        blurDataURL={shimmerPlaceholder}
-        className="object-cover"
-        unoptimized
-      />
+      <VaultImage src={image.url} alt={image.filename} fill className="object-cover" />
     </div>
   ) : null
 
@@ -74,7 +65,7 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
             >
               <div className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
                 {album.cover_url ? (
-                  <Image src={album.cover_url} alt={album.name} fill placeholder="blur" blurDataURL={shimmerPlaceholder} className="object-cover" unoptimized />
+                  <VaultImage src={album.cover_url} alt={album.name} fill className="object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <FolderOpen className="size-5 text-muted-foreground/40" />

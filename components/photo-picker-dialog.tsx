@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Image from "next/image"
 import { Check, Images } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useMedia } from "@/hooks/use-media"
 import { useAddToAlbum, useAlbumImages } from "@/hooks/use-albums"
-import { shimmerPlaceholder } from "@/lib/image-placeholder"
+import { VaultImage } from "@/components/vault-image"
 
 const LIMIT = 24
 
@@ -110,18 +109,15 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
                 className={cn(
                   "group relative aspect-square overflow-hidden rounded-xl bg-muted transition-all duration-150",
                   selected
-                    ? "ring-2 ring-primary ring-offset-2 ring-offset-popover"
+                    ? "ring-[3px] ring-inset ring-primary"
                     : "hover:opacity-90"
                 )}
               >
-                <Image
+                <VaultImage
                   src={img.url!}
                   alt={img.filename}
                   fill
-                  placeholder="blur"
-                  blurDataURL={shimmerPlaceholder}
                   className="object-cover"
-                  unoptimized
                 />
                 {/* Selection overlay */}
                 <div
