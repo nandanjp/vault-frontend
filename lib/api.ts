@@ -73,6 +73,7 @@ export type Image = {
   created_at: string
   updated_at: string
   url?: string
+  thumbnail_url?: string
 }
 
 export type Album = {
@@ -189,6 +190,11 @@ export const backendApi = {
       { method: "DELETE" },
       token
     ),
+
+  transformMedia: (token: string, id: string, filter: string): Promise<Response> =>
+    fetch(`${BACKEND_URL}/api/media/${id}/transform?filter=${encodeURIComponent(filter)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 
   getGallery: (token: string) =>
     request<{ items: Image[] }>(`${BACKEND_URL}/api/gallery`, {}, token),

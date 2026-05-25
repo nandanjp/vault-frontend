@@ -50,7 +50,7 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
       {isReady && image.url ? (
         <>
           <VaultImage
-            src={image.url}
+            src={image.thumbnail_url ?? image.url}
             alt={image.filename}
             width={image.width ?? 400}
             height={image.height ?? 400}

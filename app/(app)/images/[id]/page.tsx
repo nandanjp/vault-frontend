@@ -22,6 +22,7 @@ import { useMediaItem, useDeleteMedia } from "@/hooks/use-media"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import { useAlbums } from "@/hooks/use-albums"
 import { AlbumPickerDialog } from "@/components/album-picker-dialog"
+import { FilterPanel } from "@/components/filter-panel"
 import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
 
@@ -50,6 +51,7 @@ export default function ImageDetailPage() {
   const { data: albums } = useAlbums()
   const [imgLoaded, setImgLoaded] = useState(false)
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false)
+  const [filterCss, setFilterCss] = useState("none")
   const heartBtnRef = useRef<HTMLButtonElement>(null)
 
   const handleFavourite = () => {
@@ -227,7 +229,8 @@ export default function ImageDetailPage() {
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}
-                className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm"
+                className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm transition-[filter] duration-300"
+                style={{ filter: filterCss }}
                 onLoad={() => setImgLoaded(true)}
                 priority
               />
@@ -248,7 +251,14 @@ export default function ImageDetailPage() {
         </div>{/* end ambient glow wrapper */}
 
         {/* Metadata sidebar */}
-        <div className="lg:sticky lg:top-22 lg:self-start">
+        <div className="space-y-4 lg:sticky lg:top-22 lg:self-start">
+          {image?.status === "ready" && (
+            <FilterPanel
+              imageId={id}
+              filename={image.filename}
+              onFilterChange={setFilterCss}
+            />
+          )}
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Details
