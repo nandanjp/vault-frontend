@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useMedia } from "@/hooks/use-media"
-import { useAddToAlbum } from "@/hooks/use-albums"
+import { useAddToAlbum, useAlbumImages } from "@/hooks/use-albums"
 import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
 const LIMIT = 24
@@ -23,15 +23,22 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
   const [search, setSearch] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const { data, isLoading } = useMedia(page, LIMIT)
+  const { data: existingData } = useAlbumImages(albumId, 1, 100)
   const addToAlbum = useAddToAlbum()
+
+  const existingIds = useMemo(() => {
+    const ids = new Set<string>()
+    existingData?.items.forEach((img) => ids.add(img.id))
+    return ids
+  }, [existingData])
 
   const readyPhotos = useMemo(() => {
     if (!data?.items) return []
-    const items = data.items.filter((img) => img.status === "ready" && img.url)
+    let items = data.items.filter((img) => img.status === "ready" && img.url && !existingIds.has(img.id))
     if (!search.trim()) return items
     const q = search.toLowerCase()
     return items.filter((img) => img.filename.toLowerCase().includes(q))
-  }, [data, search])
+  }, [data, search, existingIds])
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
 
@@ -57,13 +64,18 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
   }
 
   const selectedCount = selectedIds.size
+  const skippedCount = existingIds.size
 
   return (
     <PickerDialog
       open={open}
       onOpenChange={handleClose}
       title="Add photos to album"
-      description="Tap photos to select them, then confirm."
+      description={
+        skippedCount > 0
+          ? `${skippedCount} already in album ${skippedCount === 1 ? "photo is" : "photos are"} hidden.`
+          : "Tap photos to select them, then confirm."
+      }
       searchPlaceholder="Filter by filename…"
       isLoading={isLoading}
       search={search}
@@ -86,7 +98,7 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
       }
     >
       {readyPhotos.length === 0 ? (
-        <PickerEmpty text={search ? "No photos match your search." : "No photos yet."} />
+        <PickerEmpty text={search ? "No photos match your search." : skippedCount > 0 ? "All your photos are already in this album." : "No photos yet."} />
       ) : (
         <div className="grid grid-cols-4 gap-2.5 pb-1">
           {readyPhotos.map((img) => {

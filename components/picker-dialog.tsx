@@ -25,6 +25,7 @@ export interface PickerDialogProps {
   totalPages?: number
   onPageChange?: (page: number) => void
   footer?: React.ReactNode
+  headerSlot?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -41,6 +42,7 @@ export function PickerDialog({
   totalPages,
   onPageChange,
   footer,
+  headerSlot,
   children,
 }: PickerDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -56,14 +58,15 @@ export function PickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg gap-0 p-0">
         {/* Header — no hard border, just generous padding */}
-        <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-5">
-          <div className="min-w-0">
+        <div className="flex items-center gap-3 px-5 pb-2 pt-5">
+          {headerSlot}
+          <div className="min-w-0 flex-1">
             <DialogTitle className="text-base">{title}</DialogTitle>
             {description && (
               <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             )}
           </div>
-          <DialogClose className="mt-0.5 shrink-0" />
+          <DialogClose className="self-start mt-0.5 shrink-0" />
         </div>
 
         {/* Search — floating inside content area */}

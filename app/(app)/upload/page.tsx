@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import {
   ImageUp,
@@ -180,8 +180,15 @@ function UploadRow({ item, onRemove }: { item: UploadItem; onRemove: (id: string
   const { status, file, progress, error } = item
   const isActive = status === "uploading" || status === "processing"
 
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file])
+  useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl])
+
   return (
     <div className="flex items-center gap-3 px-4 py-3">
+      {/* Local file preview thumbnail */}
+      <div className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
+        <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" />
+      </div>
       <StatusIcon status={status} progress={progress} />
 
       <div className="min-w-0 flex-1">

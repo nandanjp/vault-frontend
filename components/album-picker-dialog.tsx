@@ -5,6 +5,7 @@ import Image from "next/image"
 import { FolderOpen, Check } from "lucide-react"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
+import { useMediaItem } from "@/hooks/use-media"
 import type { Album } from "@/lib/api"
 import { shimmerPlaceholder } from "@/lib/image-placeholder"
 
@@ -17,6 +18,7 @@ interface AlbumPickerDialogProps {
 export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDialogProps) {
   const [search, setSearch] = useState("")
   const { data: albums, isLoading } = useAlbums()
+  const { data: image } = useMediaItem(imageId)
   const addToAlbum = useAddToAlbum()
 
   const filtered = useMemo(() => {
@@ -33,16 +35,31 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
     )
   }
 
+  const imagePreview = image?.url ? (
+    <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted shadow-sm">
+      <Image
+        src={image.url}
+        alt={image.filename}
+        fill
+        placeholder="blur"
+        blurDataURL={shimmerPlaceholder}
+        className="object-cover"
+        unoptimized
+      />
+    </div>
+  ) : null
+
   return (
     <PickerDialog
       open={open}
       onOpenChange={(v) => { if (!v) setSearch(""); onOpenChange(v) }}
       title="Add to album"
-      description="Choose an album for this photo."
+      description={image ? image.filename : "Choose an album for this photo."}
       searchPlaceholder="Search albums…"
       isLoading={isLoading}
       search={search}
       onSearchChange={setSearch}
+      headerSlot={imagePreview}
     >
       {filtered.length === 0 ? (
         <PickerEmpty text={search ? "No albums match your search." : "No albums yet."} />

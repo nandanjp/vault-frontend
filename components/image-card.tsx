@@ -126,7 +126,8 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
                 <AlertDialogTitle>Delete image?</AlertDialogTitle>
                 <AlertDialogDescription>
                   <span className="font-medium">{image.filename}</span> will be permanently
-                  removed. This cannot be undone.
+                  deleted from storage and removed from all albums, stories, and favourites.
+                  This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
