@@ -46,10 +46,10 @@ export function useCreateStory() {
 export function useUpdateStory() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, title, slides }: { id: string; title: string; slides: SlideInput[] }) =>
+    mutationFn: ({ id, title, slides, spotify_track_id }: { id: string; title: string; slides: SlideInput[]; spotify_track_id?: string | null }) =>
       apiFetch<StoryDetail>(`/api/stories/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ title, slides }),
+        body: JSON.stringify({ title, slides, spotify_track_id: spotify_track_id ?? null }),
       }),
     onSuccess: (data) => {
       qc.setQueryData(["stories", data.id], data)

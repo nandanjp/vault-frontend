@@ -22,8 +22,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   try {
     const { id } = await params
-    const { title, slides } = await req.json()
-    const data = await backendApi.updateStory(token, id, title, slides)
+    const { title, slides, spotify_track_id } = await req.json()
+    const data = await backendApi.updateStory(token, id, title, slides, spotify_track_id)
     return NextResponse.json(data)
   } catch (err: unknown) {
     const e = err as { status?: number; message?: string }

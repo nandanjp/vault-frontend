@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { X, Music, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { StorySlide } from "@/lib/api"
+import type { StorySlide, SpotifyTrack } from "@/lib/api"
 import gsap from "@/lib/gsap"
 import { VaultImage } from "@/components/vault-image"
 
@@ -11,9 +11,10 @@ interface StoryPlayerProps {
   slides: StorySlide[]
   initialIndex?: number
   onClose: () => void
+  track?: SpotifyTrack
 }
 
-export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerProps) {
+export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryPlayerProps) {
   const [idx, setIdx] = useState(initialIndex)
   const [paused, setPaused] = useState(false)
 
@@ -33,6 +34,22 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
   const slideEls = useRef<(HTMLDivElement | null)[]>([])
   const progressEls = useRef<(HTMLDivElement | null)[]>([])
   const progressTween = useRef<gsap.core.Tween | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Auto-play track preview and stop on unmount
+  useEffect(() => {
+    if (!track?.preview_url || !audioRef.current) return
+    audioRef.current.volume = 0.7
+    audioRef.current.play().catch(() => {})
+    return () => { audioRef.current?.pause() }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pause / resume audio with story pause state
+  useEffect(() => {
+    if (!audioRef.current || !track?.preview_url) return
+    if (paused) audioRef.current.pause()
+    else audioRef.current.play().catch(() => {})
+  }, [paused, track?.preview_url])
 
   // Stable — reads everything from refs, zero deps
   const navigateTo = useCallback((nextIdx: number, dir: 1 | -1) => {
@@ -111,8 +128,9 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
     slideEls.current.forEach((el, i) => {
       if (el) gsap.set(el, { opacity: i === initialIndex ? 1 : 0, x: 0, scale: 1 })
     })
-    progressEls.current.forEach((el) => {
-      if (el) gsap.set(el, { scaleX: 0 })
+    // Pre-fill bars for slides already "played" before the initial index
+    progressEls.current.forEach((el, i) => {
+      if (el) gsap.set(el, { scaleX: i < initialIndex ? 1 : 0 })
     })
     startProgress(initialIndex)
     return () => { progressTween.current?.kill() }
@@ -156,15 +174,18 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
+      {track?.preview_url && (
+        <audio ref={audioRef} src={track.preview_url} preload="auto" loop />
+      )}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Phone frame */}
+      {/* Phone frame — 300×650 ≈ iPhone 16 aspect ratio (9:19.5) */}
       <div
-        className="relative z-10 overflow-hidden rounded-[44px] border-[6px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
-        style={{ width: 360, height: 640 }}
+        className="relative z-10 overflow-hidden rounded-[42px] border-[5px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
+        style={{ width: 300, height: 650 }}
       >
         {/* Notch */}
-        <div className="absolute left-1/2 top-3 z-30 h-[18px] w-24 -translate-x-1/2 rounded-full bg-zinc-800" />
+        <div className="absolute left-1/2 top-3 z-30 h-[15px] w-20 -translate-x-1/2 rounded-full bg-zinc-800" />
 
         {/* All slides stacked — loading="eager" on all so hidden slides pre-load */}
         {slides.map((slide, i) => (
@@ -195,7 +216,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-40 bg-gradient-to-t from-black/70 to-transparent" />
 
         {/* Progress bars */}
-        <div className="absolute inset-x-4 top-10 z-30 flex gap-1">
+        <div className="absolute inset-x-3 top-9 z-30 flex gap-1">
           {slides.map((_, i) => (
             <div key={i} className="h-[2.5px] flex-1 overflow-hidden rounded-full bg-white/30">
               <div
@@ -208,7 +229,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
         </div>
 
         {/* Header chrome */}
-        <div className="absolute inset-x-4 top-[52px] z-30 flex items-center gap-2.5">
+        <div className="absolute inset-x-3 top-[46px] z-30 flex items-center gap-2.5">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 ring-2 ring-white/20">
             <span className="text-[11px] font-bold text-white">V</span>
           </div>
@@ -248,7 +269,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
 
         {/* Caption */}
         {current?.caption && (
-          <div className="absolute inset-x-4 bottom-20 z-30 text-center">
+          <div className="absolute inset-x-3 bottom-16 z-30 text-center">
             <p className="text-[15px] font-semibold leading-snug text-white drop-shadow-lg">
               {current.caption}
             </p>
@@ -256,12 +277,16 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose }: StoryPlayerPr
         )}
 
         {/* Music badge */}
-        <div className="absolute bottom-8 left-4 z-30">
-          <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
-            <Music className="size-3 text-white/70" />
-            <span className="text-[11px] text-white/70">Add music</span>
+        {track && (
+          <div className="absolute bottom-7 left-3 z-30 max-w-[calc(100%-24px)]">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
+              <Music className="size-3 shrink-0 text-white/70" />
+              <span className="truncate text-[11px] text-white/70">
+                {track.name} · {track.artists[0]}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* External nav arrows */}

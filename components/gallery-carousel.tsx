@@ -81,15 +81,11 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
           {/* Blurred background — fills the container regardless of image orientation */}
           {image.url && (
             <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url(${image.url})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(28px) brightness(0.35) saturate(1.2)",
-                transform: "scale(1.1)",
-              }}
-            />
+              className="absolute inset-0 overflow-hidden"
+              style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)", transform: "scale(1.1)" }}
+            >
+              <VaultImage src={image.url} alt="" fill className="object-cover" aria-hidden />
+            </div>
           )}
 
           {/* Foreground image — centered, contained */}

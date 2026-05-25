@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
-  Check, Images, Pencil,
+  Check, Images, Pencil, Search, X, Pause,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { useStory, useUpdateStory } from "@/hooks/use-stories"
 import { useMedia } from "@/hooks/use-media"
 import { StoryPlayer } from "@/components/story-player"
 import { VaultImage } from "@/components/vault-image"
-import type { StorySlide, StoryTransition, SlideInput } from "@/lib/api"
+import type { StorySlide, StoryTransition, SlideInput, SpotifyTrack } from "@/lib/api"
 
 // ---------- Draft types ----------
 
@@ -32,11 +32,12 @@ type DraftSlide = {
   caption: string
 }
 
-type Draft = { title: string; slides: DraftSlide[] }
+type Draft = { title: string; slides: DraftSlide[]; spotifyTrackId: string | null }
 
 type Action =
   | { type: "LOAD"; draft: Draft }
   | { type: "SET_TITLE"; title: string }
+  | { type: "SET_SPOTIFY"; trackId: string | null }
   | { type: "ADD_SLIDES"; images: SlideImage[] }
   | { type: "REMOVE_SLIDE"; tempId: string }
   | { type: "UPDATE_SLIDE"; tempId: string; patch: Partial<DraftSlide> }
@@ -48,6 +49,7 @@ function reducer(state: Draft, action: Action): Draft {
   switch (action.type) {
     case "LOAD": return action.draft
     case "SET_TITLE": return { ...state, title: action.title }
+    case "SET_SPOTIFY": return { ...state, spotifyTrackId: action.trackId }
     case "ADD_SLIDES":
       return {
         ...state,
@@ -98,12 +100,14 @@ export default function StoryEditPage() {
   const { data: story, isLoading } = useStory(id)
   const updateStory = useUpdateStory()
 
-  const [draft, dispatch] = useReducer(reducer, { title: "", slides: [] })
+  const [draft, dispatch] = useReducer(reducer, { title: "", slides: [], spotifyTrackId: null })
+  const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null)
   const [activeIdx, setActiveIdx] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved")
   const [editingTitle, setEditingTitle] = useState(false)
+  const [mobileTab, setMobileTab] = useState<"slides" | "config">("slides")
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   // Load story data into draft on first fetch
@@ -115,6 +119,7 @@ export default function StoryEditPage() {
       type: "LOAD",
       draft: {
         title: story.title,
+        spotifyTrackId: story.spotify_track_id ?? null,
         slides: story.slides.map((s) => ({
           tempId: s.id,
           id: s.id,
@@ -129,20 +134,24 @@ export default function StoryEditPage() {
         })),
       },
     })
+    setSelectedTrack(story.track ?? null)
   }, [story])
 
-  // Auto-save — debounced 800ms after any draft change
+  // Auto-save — debounced 800ms after any draft change.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const draftRef = useRef(draft)
   draftRef.current = draft
+  const updateStoryRef = useRef(updateStory)
+  updateStoryRef.current = updateStory
 
   const save = useCallback(() => {
     setSaveStatus("saving")
     const d = draftRef.current
-    updateStory.mutate(
+    updateStoryRef.current.mutate(
       {
         id,
         title: d.title,
+        spotify_track_id: d.spotifyTrackId,
         slides: d.slides.map((s) => ({
           image_id: s.image_id,
           duration_ms: s.duration_ms,
@@ -155,7 +164,7 @@ export default function StoryEditPage() {
         onError: () => setSaveStatus("unsaved"),
       }
     )
-  }, [id, updateStory])
+  }, [id])
 
   useEffect(() => {
     if (!loaded.current) return
@@ -175,6 +184,16 @@ export default function StoryEditPage() {
   const handleRemove = (tempId: string) => {
     dispatch({ type: "REMOVE_SLIDE", tempId })
     setActiveIdx((prev) => Math.min(prev, Math.max(0, draft.slides.length - 2)))
+  }
+
+  const handleSelectTrack = (track: SpotifyTrack) => {
+    setSelectedTrack(track)
+    dispatch({ type: "SET_SPOTIFY", trackId: track.id })
+  }
+
+  const handleRemoveTrack = () => {
+    setSelectedTrack(null)
+    dispatch({ type: "SET_SPOTIFY", trackId: null })
   }
 
   // Map draft → StorySlide for the player
@@ -249,10 +268,40 @@ export default function StoryEditPage() {
         </Button>
       </div>
 
-      {/* Three-column layout */}
+      {/* Mobile tab bar — hidden on desktop */}
+      <div className="flex shrink-0 border-b border-border lg:hidden">
+        <button
+          onClick={() => setMobileTab("slides")}
+          className={cn(
+            "flex-1 py-2.5 text-sm font-medium transition-colors",
+            mobileTab === "slides"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Slides
+        </button>
+        <button
+          onClick={() => setMobileTab("config")}
+          className={cn(
+            "flex-1 py-2.5 text-sm font-medium transition-colors",
+            mobileTab === "config"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Settings
+        </button>
+      </div>
+
+      {/* Three-column layout — center panel hidden on mobile */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: slide strip — wider for more usable thumbnails */}
-        <div className="flex w-[152px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-border bg-muted/20 p-2.5">
+        {/* Left: slide strip */}
+        <div className={cn(
+          "flex flex-col gap-2 overflow-y-auto border-r border-border bg-muted/20 p-2.5",
+          "w-full lg:w-[152px] lg:shrink-0",
+          mobileTab !== "slides" && "hidden lg:flex"
+        )}>
           {draft.slides.map((slide, i) => (
             <SlideThumb
               key={slide.tempId}
@@ -272,27 +321,42 @@ export default function StoryEditPage() {
           </button>
         </div>
 
-        {/* Center: large image view — no phone frame, no transitions */}
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-zinc-950">
+        {/* Center: large image view — desktop only */}
+        <div className="relative hidden flex-1 items-center justify-center overflow-hidden bg-zinc-950 lg:flex">
           <SlideView slide={activeSlide} totalSlides={draft.slides.length} activeIdx={activeIdx} />
         </div>
 
-        {/* Right: slide config */}
-        <div className="flex w-[272px] shrink-0 flex-col overflow-y-auto border-l border-border p-5">
-          {activeSlide ? (
-            <SlideConfig
-              slide={activeSlide}
-              index={activeIdx}
-              total={draft.slides.length}
-              onChange={(patch) => dispatch({ type: "UPDATE_SLIDE", tempId: activeSlide.tempId, patch })}
-              onRemove={() => handleRemove(activeSlide.tempId)}
+        {/* Right: slide config + story music */}
+        <div className={cn(
+          "flex flex-col overflow-y-auto border-l border-border",
+          "w-full lg:w-[272px] lg:shrink-0",
+          mobileTab !== "config" && "hidden lg:flex"
+        )}>
+          <div className="flex-1 p-5">
+            {activeSlide ? (
+              <SlideConfig
+                slide={activeSlide}
+                index={activeIdx}
+                total={draft.slides.length}
+                onChange={(patch) => dispatch({ type: "UPDATE_SLIDE", tempId: activeSlide.tempId, patch })}
+                onRemove={() => handleRemove(activeSlide.tempId)}
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <ImageIcon className="size-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Select a slide to configure it</p>
+              </div>
+            )}
+          </div>
+
+          {/* Story music section — always visible */}
+          <div className="border-t border-border p-5">
+            <SpotifySection
+              selectedTrack={selectedTrack}
+              onSelect={handleSelectTrack}
+              onRemove={handleRemoveTrack}
             />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <ImageIcon className="size-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Select a slide to configure it</p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -309,7 +373,195 @@ export default function StoryEditPage() {
           slides={playerSlides}
           initialIndex={activeIdx}
           onClose={() => setPlaying(false)}
+          track={selectedTrack ?? undefined}
         />
+      )}
+    </div>
+  )
+}
+
+// ---------- Spotify section ----------
+
+function SpotifySection({
+  selectedTrack,
+  onSelect,
+  onRemove,
+}: {
+  selectedTrack: SpotifyTrack | null
+  onSelect: (track: SpotifyTrack) => void
+  onRemove: () => void
+}) {
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<SpotifyTrack[]>([])
+  const [searching, setSearching] = useState(false)
+  const [previewPlaying, setPreviewPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Debounced search
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    setSearching(true)
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          setResults(data.tracks ?? [])
+        }
+      } finally {
+        setSearching(false)
+      }
+    }, 400)
+    return () => { clearTimeout(t); setSearching(false) }
+  }, [query])
+
+  const handleSelect = (track: SpotifyTrack) => {
+    onSelect(track)
+    setQuery("")
+    setResults([])
+    stopPreview()
+  }
+
+  const stopPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+    setPreviewPlaying(false)
+  }
+
+  const togglePreview = () => {
+    if (!audioRef.current || !selectedTrack?.preview_url) return
+    if (previewPlaying) {
+      audioRef.current.pause()
+      setPreviewPlaying(false)
+    } else {
+      audioRef.current.play().catch(() => {})
+      setPreviewPlaying(true)
+    }
+  }
+
+  const handleRemove = () => {
+    stopPreview()
+    onRemove()
+  }
+
+  const formatDuration = (ms: number) => {
+    const s = Math.floor(ms / 1000)
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Music className="size-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Music</span>
+      </div>
+
+      {selectedTrack ? (
+        <div className="rounded-xl border border-border bg-muted/30 p-3">
+          <div className="flex items-center gap-3">
+            {selectedTrack.album_art_url && (
+              <div className="relative size-10 shrink-0 overflow-hidden rounded-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedTrack.album_art_url}
+                  alt={selectedTrack.album_name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold leading-none">{selectedTrack.name}</p>
+              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                {selectedTrack.artists.join(", ")}
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground/60 tabular-nums">
+                {formatDuration(selectedTrack.duration_ms)}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              {selectedTrack.preview_url && (
+                <>
+                  {selectedTrack.preview_url && (
+                    <audio
+                      ref={audioRef}
+                      src={selectedTrack.preview_url}
+                      preload="auto"
+                      onEnded={() => setPreviewPlaying(false)}
+                    />
+                  )}
+                  <button
+                    onClick={togglePreview}
+                    className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    title={previewPlaying ? "Pause preview" : "Play 30s preview"}
+                  >
+                    {previewPlaying ? <Pause className="size-3 fill-primary" /> : <Play className="size-3 fill-primary" />}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleRemove}
+                className="flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+            {searching ? (
+              <div className="size-3.5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+            ) : (
+              <Search className="size-3.5 text-muted-foreground/50" />
+            )}
+          </div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Spotify…"
+            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+          />
+        </div>
+      )}
+
+      {/* Search results dropdown */}
+      {results.length > 0 && !selectedTrack && (
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          {results.slice(0, 6).map((track) => (
+            <button
+              key={track.id}
+              onClick={() => handleSelect(track)}
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60 first:rounded-t-xl last:rounded-b-xl"
+            >
+              {track.album_art_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={track.album_art_url}
+                  alt=""
+                  className="size-8 shrink-0 rounded-md object-cover"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium leading-none">{track.name}</p>
+                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                  {track.artists.join(", ")} · {track.album_name}
+                </p>
+              </div>
+              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">
+                {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, "0")}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!selectedTrack && !query && (
+        <p className="text-[10px] text-muted-foreground/50">
+          Add a track that plays during preview.
+        </p>
       )}
     </div>
   )
@@ -348,18 +600,15 @@ function SlideThumb({
           <ImageIcon className="size-5 text-muted-foreground/40" />
         </div>
       )}
-      {/* Index badge */}
       <div className="absolute left-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-bold text-white">
         {index + 1}
       </div>
-      {/* Remove button on hover */}
       <button
         onClick={(e) => { e.stopPropagation(); onRemove() }}
         className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
       >
         <Trash2 className="size-3" />
       </button>
-      {/* Active indicator strip */}
       {active && (
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
       )}
@@ -367,7 +616,7 @@ function SlideThumb({
   )
 }
 
-// ---------- Center slide view (no phone, no transitions) ----------
+// ---------- Center slide view ----------
 
 function SlideView({
   slide, totalSlides, activeIdx,
@@ -387,20 +636,16 @@ function SlideView({
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
-      {/* Blurred background fill */}
       {slide.url && (
         <div
-          className="absolute inset-0 scale-110"
-          style={{
-            backgroundImage: `url(${slide.url})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(32px) brightness(0.3) saturate(1.4)",
-          }}
-        />
+          key={slide.tempId}
+          className="absolute inset-0 scale-110 overflow-hidden"
+          style={{ filter: "blur(32px) brightness(0.3) saturate(1.4)" }}
+        >
+          <VaultImage src={slide.url} alt="" fill className="object-cover" aria-hidden />
+        </div>
       )}
 
-      {/* Image — contained, natural aspect ratio */}
       <div className="relative z-10 flex h-full max-h-full w-full items-center justify-center p-10">
         {slide.url ? (
           <div className="relative h-full w-full">
@@ -419,14 +664,12 @@ function SlideView({
         )}
       </div>
 
-      {/* Caption overlay */}
       {slide.caption && (
         <div className="absolute inset-x-8 bottom-16 z-20 text-center">
           <p className="text-base font-semibold text-white drop-shadow-lg">{slide.caption}</p>
         </div>
       )}
 
-      {/* Slide position pill */}
       <div className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 backdrop-blur-sm">
         <span className="text-xs tabular-nums text-white/70">
           Slide {activeIdx + 1} of {totalSlides}
@@ -530,13 +773,6 @@ function SlideConfig({
           </div>
         </div>
       )}
-
-      {/* Spotify placeholder */}
-      <div className="rounded-xl border border-dashed border-border p-4 text-center">
-        <Music className="mx-auto size-5 text-muted-foreground/40" />
-        <p className="mt-1.5 text-xs font-medium text-muted-foreground">Music</p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground/60">Spotify integration coming soon</p>
-      </div>
 
       {/* Remove */}
       <button

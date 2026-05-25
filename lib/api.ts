@@ -110,12 +110,24 @@ export type StorySlide = {
   url?: string
 }
 
+export type SpotifyTrack = {
+  id: string
+  name: string
+  artists: string[]
+  album_name: string
+  album_art_url: string
+  duration_ms: number
+  preview_url?: string
+}
+
 export type Story = {
   id: string
   user_id: string
   title: string
   slide_count: number
   cover_url?: string
+  spotify_track_id?: string
+  track?: SpotifyTrack
   created_at: string
   updated_at: string
 }
@@ -240,13 +252,16 @@ export const backendApi = {
   getStory: (token: string, id: string) =>
     request<StoryDetail>(`${BACKEND_URL}/api/stories/${id}`, {}, token),
 
-  updateStory: (token: string, id: string, title: string, slides: SlideInput[]) =>
+  updateStory: (token: string, id: string, title: string, slides: SlideInput[], spotifyTrackId?: string | null) =>
     request<StoryDetail>(
       `${BACKEND_URL}/api/stories/${id}`,
-      { method: "PUT", body: JSON.stringify({ title, slides }) },
+      { method: "PUT", body: JSON.stringify({ title, slides, spotify_track_id: spotifyTrackId ?? null }) },
       token
     ),
 
   deleteStory: (token: string, id: string) =>
     request<void>(`${BACKEND_URL}/api/stories/${id}`, { method: "DELETE" }, token),
+
+  searchSpotify: (token: string, q: string) =>
+    request<{ tracks: SpotifyTrack[] }>(`${BACKEND_URL}/api/spotify/search?q=${encodeURIComponent(q)}`, {}, token),
 }
