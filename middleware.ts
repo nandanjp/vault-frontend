@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const publicPaths = new Set(["/login", "/register"])
+const publicPaths = new Set(["/", "/login", "/register"])
 const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3002"
 
 export async function middleware(request: NextRequest) {

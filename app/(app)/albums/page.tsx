@@ -178,7 +178,7 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
 
   if (thumbs.length === 1) {
     return (
-      <VaultImage src={thumbs[0].url} alt={thumbs[0].filename} fill className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105" />
+      <VaultImage src={thumbs[0].url} alt={thumbs[0].filename} fill className="object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105" />
     )
   }
 
@@ -192,7 +192,7 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
               src={thumbs[i].url}
               alt={thumbs[i].filename}
               fill
-              className="object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
+              className="object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105"
             />
           ) : null}
         </div>

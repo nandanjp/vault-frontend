@@ -25,9 +25,14 @@ interface ImageCardProps {
   isDeleting?: boolean
   // natural=true → use real aspect ratio (masonry); false (default) → aspect-square
   natural?: boolean
+  confirmTitle?: string
+  confirmDescription?: string
+  confirmLabel?: string
 }
 
-export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardProps) {
+export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle = "Delete image?", confirmDescription, confirmLabel = "Delete" }: ImageCardProps) {
+  const defaultDesc = `${image.filename} will be permanently deleted from storage and removed from all albums, stories, and favourites. This cannot be undone.`
+  const resolvedDesc = confirmDescription ?? defaultDesc
   const isReady     = image.status === "ready"
   const isFailed    = image.status === "failed"
   const isPending   = image.status === "pending"
@@ -49,11 +54,11 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
             alt={image.filename}
             width={image.width ?? 400}
             height={image.height ?? 400}
-            className="h-full w-full object-cover transition-[opacity,transform] duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105"
             loading="lazy"
           />
           {/* Filename overlay — slides up on hover */}
-          <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 transition-transform duration-300 ease-out group-hover:translate-y-0">
+          <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 transition-[transform,translate] duration-300 ease-out group-hover:translate-y-0">
             <p className="truncate text-xs font-medium text-white/90">{image.filename}</p>
           </div>
         </>
@@ -112,12 +117,8 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete image?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <span className="font-medium">{image.filename}</span> will be permanently
-                  deleted from storage and removed from all albums, stories, and favourites.
-                  This cannot be undone.
-                </AlertDialogDescription>
+                <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+                <AlertDialogDescription>{resolvedDesc}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -125,7 +126,7 @@ export function ImageCard({ image, onDelete, isDeleting, natural }: ImageCardPro
                   onClick={() => onDelete(image.id)}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete
+                  {confirmLabel}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

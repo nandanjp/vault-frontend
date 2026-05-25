@@ -9,7 +9,6 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@/hooks/use-albums"
-import { useDeleteMedia } from "@/hooks/use-media"
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
 import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
@@ -24,7 +23,6 @@ export default function AlbumDetailPage() {
   const { data, isLoading } = useAlbumImages(id, page, LIMIT)
   const { data: heroData } = useAlbumImages(id, 1, 5)
   const removeFromAlbum = useRemoveFromAlbum()
-  const deleteMedia = useDeleteMedia()
   const updateAlbum = useUpdateAlbum()
   const [addPhotosOpen, setAddPhotosOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -171,19 +169,15 @@ export default function AlbumDetailPage() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {data.items.map((image) => (
-              <div key={image.id} className="group/wrap relative">
-                <ImageCard
-                  image={image}
-                  onDelete={(imgId) => deleteMedia.mutate(imgId)}
-                  isDeleting={deleteMedia.isPending && deleteMedia.variables === image.id}
-                />
-                <button
-                  onClick={() => removeFromAlbum.mutate({ albumId: id, imageId: image.id })}
-                  className="absolute bottom-11 left-2 hidden rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm hover:bg-black/80 group-hover/wrap:block transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
+              <ImageCard
+                key={image.id}
+                image={image}
+                onDelete={(imgId) => removeFromAlbum.mutate({ albumId: id, imageId: imgId })}
+                isDeleting={removeFromAlbum.isPending}
+                confirmTitle="Remove from album?"
+                confirmDescription={`${image.filename} will be removed from this album but remain in your library.`}
+                confirmLabel="Remove"
+              />
             ))}
           </div>
 
@@ -305,7 +299,7 @@ function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
         src={img.url}
         alt={img.filename}
         fill
-        className="object-cover transition-[opacity,transform] duration-500 hover:scale-105"
+        className="object-cover transition-[opacity,transform,scale] duration-500 hover:scale-105"
       />
     </div>
   )

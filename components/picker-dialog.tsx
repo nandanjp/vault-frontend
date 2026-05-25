@@ -84,7 +84,7 @@ export function PickerDialog({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-3">
+        <div className="flex-1 overflow-y-auto px-5 pt-1 pb-3">
           {isLoading ? <PickerSkeleton /> : children}
         </div>
 
