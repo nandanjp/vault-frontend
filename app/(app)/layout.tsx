@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <MobileTopBar />
-          <main id="scroll-main" className="flex-1 overflow-y-scroll">
+          <main id="scroll-main" className="flex-1 overflow-y-auto">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>

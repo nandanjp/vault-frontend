@@ -12,8 +12,8 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     if (!ref.current) return
     gsap.fromTo(
       ref.current,
-      { opacity: 0, y: 8 },
-      { opacity: 1, y: 0, duration: 0.38, ease: "power2.out", clearProps: "transform" }
+      { opacity: 0 },
+      { opacity: 1, duration: 0.38, ease: "power2.out" }
     )
   }, [pathname])
 
