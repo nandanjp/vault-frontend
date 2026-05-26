@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback, useReducer } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
@@ -98,6 +98,7 @@ const TRANSITIONS: { value: StoryTransition; label: string }[] = [
 
 export default function StoryEditPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { data: story, isLoading } = useStory(id)
   const updateStory = useUpdateStory()
 
@@ -219,13 +220,13 @@ export default function StoryEditPage() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Top bar */}
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <Link
-          href="/stories"
+        <button
+          onClick={() => router.back()}
           className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
           Stories
-        </Link>
+        </button>
         <div className="mx-1 h-4 w-px bg-border" />
 
         {/* Editable title */}

@@ -56,7 +56,7 @@ export function useLogout() {
     mutationFn: () => post("/api/auth/logout", {}),
     onSettled: () => {
       qc.clear()
-      router.push("/login")
+      router.push("/")
     },
   })
 }

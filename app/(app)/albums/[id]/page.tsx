@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, ImagePlus, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@/hooks/use-albums"
@@ -18,6 +20,7 @@ const LIMIT = 20
 
 export default function AlbumDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { data: albums } = useAlbums()
   const album = albums?.find((a) => a.id === id)
   const [page, setPage] = useState(1)
@@ -80,13 +83,13 @@ export default function AlbumDetailPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Breadcrumb */}
       <div className="mb-8 flex items-center justify-between">
-        <Link
-          href="/albums"
+        <button
+          onClick={() => router.back()}
           className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
           Albums
-        </Link>
+        </button>
         <div className="flex items-center gap-2">
           {(data?.total ?? 0) > 0 && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => openSlideshow(0)}>
@@ -208,29 +211,15 @@ export default function AlbumDetailPage() {
             })}
           </div>
 
-          {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(next) => {
+              setPage(next)
+              document.getElementById("scroll-main")?.scrollTo({ top: 0, behavior: "smooth" })
+            }}
+            className="mt-8"
+          />
         </>
       )}
 

@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { Upload, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
+import { Pagination } from "@/components/ui/pagination"
 import { AlbumPickerDialog } from "@/components/album-picker-dialog"
 import { useMedia, useDeleteMedia } from "@/hooks/use-media"
 import gsap, { ScrollTrigger } from "@/lib/gsap"
@@ -20,6 +21,11 @@ export default function PhotosPage() {
   const gridRef = useRef<HTMLDivElement>(null)
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
+
+  const handlePageChange = (next: number) => {
+    setPage(next)
+    document.getElementById("scroll-main")?.scrollTo({ top: 0, behavior: "smooth" })
+  }
   const pendingCount = data?.items.filter(
     (i) => i.status === "pending" || i.status === "processing"
   ).length ?? 0
@@ -133,29 +139,12 @@ export default function PhotosPage() {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            className="mt-10"
+          />
         </>
       )}
 

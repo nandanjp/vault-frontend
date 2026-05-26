@@ -106,9 +106,13 @@ export default function ImageDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}>
+          <button
+            onClick={() => router.back()}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
+            aria-label="Go back"
+          >
             <ArrowLeft className="size-4" />
-          </Link>
+          </button>
           {isLoading ? (
             <Skeleton className="h-5 w-52" />
           ) : (

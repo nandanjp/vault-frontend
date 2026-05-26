@@ -32,11 +32,7 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
     if (overlayRef.current)
       gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" })
     if (modalRef.current)
-      gsap.fromTo(
-        modalRef.current,
-        { scale: 0.96, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.28, ease: "power2.out" }
-      )
+      gsap.fromTo(modalRef.current, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" })
   }, [])
 
   // Keep thumbnail strip in sync with current slide
@@ -141,16 +137,16 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
                   className={cn(
                     "group shrink-0 overflow-hidden rounded-xl border transition-all duration-200",
                     isSelected
-                      ? "h-20.5 w-20.5 border-white/50 opacity-100 ring-2 ring-white shadow-lg"
-                      : "h-14.5 w-14.5 border-white/10 bg-white/5 opacity-45 hover:opacity-75 hover:border-white/25"
+                      ? "h-20 aspect-[4/3] border-white/50 opacity-100 ring-2 ring-white shadow-lg"
+                      : "h-14 aspect-[4/3] border-white/10 bg-white/5 opacity-45 hover:opacity-75 hover:border-white/25"
                   )}
                 >
                   {(image.thumbnail_url ?? image.url) && (
                     <VaultImage
                       src={image.thumbnail_url ?? image.url!}
                       alt={image.filename}
-                      width={82}
-                      height={82}
+                      width={107}
+                      height={80}
                       className="h-full w-full object-cover"
                     />
                   )}

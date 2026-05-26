@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
 import { FolderOpen, FolderPlus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -15,11 +16,25 @@ import type { Album } from "@/lib/api"
 import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
 
+const ALBUMS_PER_PAGE = 12
+
 export default function AlbumsPage() {
   const { data: albums, isLoading } = useAlbums()
   const createAlbum = useCreateAlbum()
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState("")
+  const [albumPage, setAlbumPage] = useState(1)
+
+  const albumTotalPages = albums ? Math.ceil(albums.length / ALBUMS_PER_PAGE) : 0
+  const visibleAlbums = albums?.slice(
+    (albumPage - 1) * ALBUMS_PER_PAGE,
+    albumPage * ALBUMS_PER_PAGE
+  ) ?? []
+
+  const handleAlbumPageChange = (next: number) => {
+    setAlbumPage(next)
+    document.getElementById("scroll-main")?.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const gridRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -29,7 +44,7 @@ export default function AlbumsPage() {
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: "power2.out" }
     )
-  }, [isLoading])
+  }, [isLoading, albumPage])
 
   const handleCreate = () => {
     if (!newName.trim()) return
@@ -44,7 +59,7 @@ export default function AlbumsPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Albums</h1>
-          {albums && (
+          {albums && albums.length > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
               {albums.length} {albums.length === 1 ? "album" : "albums"}
             </p>
@@ -99,12 +114,20 @@ export default function AlbumsPage() {
         </div>
       )}
 
-      {!isLoading && albums && albums.length > 0 && (
-        <div ref={gridRef} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {albums.map((album) => (
-            <AlbumCard key={album.id} album={album} />
-          ))}
-        </div>
+      {!isLoading && visibleAlbums.length > 0 && (
+        <>
+          <div ref={gridRef} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {visibleAlbums.map((album) => (
+              <AlbumCard key={album.id} album={album} />
+            ))}
+          </div>
+          <Pagination
+            page={albumPage}
+            totalPages={albumTotalPages}
+            onPageChange={handleAlbumPageChange}
+            className="mt-10"
+          />
+        </>
       )}
     </div>
   )
