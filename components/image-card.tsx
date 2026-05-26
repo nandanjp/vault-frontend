@@ -29,9 +29,11 @@ interface ImageCardProps {
   confirmTitle?: string
   confirmDescription?: string
   confirmLabel?: string
+  // if provided, replaces the default Link→/images/[id] with a button click
+  onView?: (id: string) => void
 }
 
-export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle = "Delete image?", confirmDescription, confirmLabel = "Delete" }: ImageCardProps) {
+export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle = "Delete image?", confirmDescription, confirmLabel = "Delete", onView }: ImageCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
   const defaultDesc = `${image.filename} will be permanently deleted from storage and removed from all albums, stories, and favourites. This cannot be undone.`
   const resolvedDesc = confirmDescription ?? defaultDesc
@@ -91,9 +93,15 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md">
       {isReady ? (
-        <Link href={`/images/${image.id}`} className="block">
-          {imageArea}
-        </Link>
+        onView ? (
+          <button onClick={() => onView(image.id)} className="block w-full text-left">
+            {imageArea}
+          </button>
+        ) : (
+          <Link href={`/images/${image.id}`} className="block">
+            {imageArea}
+          </Link>
+        )
       ) : (
         imageArea
       )}

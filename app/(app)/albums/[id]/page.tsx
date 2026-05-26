@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, ImagePlus, ChevronRight } from "lucide-react"
+import { ArrowLeft, ImagePlus, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { ImageCard, ImageCardSkeleton } from "@/components/image-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@/hooks/use-albums"
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
+import { AlbumSlideshow } from "@/components/album-slideshow"
 import { VaultImage } from "@/components/vault-image"
 import gsap from "@/lib/gsap"
 
@@ -28,6 +29,20 @@ export default function AlbumDetailPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameValue, setNameValue] = useState("")
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Slideshow state
+  const [slideshowOpen, setSlideshowOpen] = useState(false)
+  const [slideshowIndex, setSlideshowIndex] = useState(0)
+  // Load all images only when the slideshow has been opened at least once
+  const [slideshowEverOpened, setSlideshowEverOpened] = useState(false)
+  const { data: allImagesData } = useAlbumImages(id, 1, 500, slideshowEverOpened)
+  const slideshowImages = (allImagesData?.items ?? []).filter((i) => i.status === "ready" && i.url)
+
+  const openSlideshow = (startIndex = 0) => {
+    setSlideshowIndex(startIndex)
+    setSlideshowEverOpened(true)
+    setSlideshowOpen(true)
+  }
 
   const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
   const heroImages = (heroData?.items.filter((i) => i.status === "ready" && i.url) ?? []) as BentoImg[]
@@ -72,10 +87,18 @@ export default function AlbumDetailPage() {
           <ArrowLeft className="size-3.5" />
           Albums
         </Link>
-        <Button size="sm" className="gap-2" onClick={() => setAddPhotosOpen(true)}>
-          <ImagePlus className="size-4" />
-          Add photos
-        </Button>
+        <div className="flex items-center gap-2">
+          {slideshowImages.length > 0 && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => openSlideshow(0)}>
+              <Play className="size-4" />
+              Slideshow
+            </Button>
+          )}
+          <Button size="sm" className="gap-2" onClick={() => setAddPhotosOpen(true)}>
+            <ImagePlus className="size-4" />
+            Add photos
+          </Button>
+        </div>
       </div>
 
       {/* Hero title — Notion-style large editable heading */}
@@ -168,17 +191,21 @@ export default function AlbumDetailPage() {
       {!isLoading && data && data.items.length > 0 && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {data.items.map((image) => (
-              <ImageCard
-                key={image.id}
-                image={image}
-                onDelete={(imgId) => removeFromAlbum.mutate({ albumId: id, imageId: imgId })}
-                isDeleting={removeFromAlbum.isPending}
-                confirmTitle="Remove from album?"
-                confirmDescription={`${image.filename} will be removed from this album but remain in your library.`}
-                confirmLabel="Remove"
-              />
-            ))}
+            {data.items.map((image) => {
+              const slideshowIdx = slideshowImages.findIndex((s) => s.id === image.id)
+              return (
+                <ImageCard
+                  key={image.id}
+                  image={image}
+                  onDelete={(imgId) => removeFromAlbum.mutate({ albumId: id, imageId: imgId })}
+                  isDeleting={removeFromAlbum.isPending}
+                  confirmTitle="Remove from album?"
+                  confirmDescription={`${image.filename} will be removed from this album but remain in your library.`}
+                  confirmLabel="Remove"
+                  onView={slideshowIdx !== -1 ? () => openSlideshow(slideshowIdx) : undefined}
+                />
+              )
+            })}
           </div>
 
           {totalPages > 1 && (
@@ -212,6 +239,15 @@ export default function AlbumDetailPage() {
         onOpenChange={setAddPhotosOpen}
         albumId={id}
       />
+
+      {slideshowOpen && slideshowImages.length > 0 && (
+        <AlbumSlideshow
+          key={slideshowIndex}
+          images={slideshowImages}
+          initialIndex={slideshowIndex}
+          onClose={() => setSlideshowOpen(false)}
+        />
+      )}
     </div>
   )
 }

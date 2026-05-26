@@ -14,12 +14,13 @@ export function useAlbums() {
   })
 }
 
-export function useAlbumImages(id: string, page: number, limit = 20) {
+export function useAlbumImages(id: string, page: number, limit = 20, enabled = true) {
   return useQuery<ImagePage>({
     queryKey: ["albums", id, "images", page, limit],
     queryFn: () => apiFetch(`/api/albums/${id}/images?page=${page}&limit=${limit}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    enabled,
     select: (data) => ({ ...data, items: data.items.map(normalizeImage) }),
   })
 }
