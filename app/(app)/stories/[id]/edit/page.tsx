@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback, useReducer } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
 import {
   ArrowLeft, Play, Plus, Trash2, ImageIcon, Music,
-  Check, Images, Pencil,
+  Images, Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,6 +24,7 @@ type DraftSlide = {
   id?: string
   image_id: string
   url?: string
+  thumbnail_url?: string
   filename: string
   width?: number
   height?: number
@@ -44,7 +44,7 @@ type Action =
   | { type: "UPDATE_SLIDE"; tempId: string; patch: Partial<DraftSlide> }
   | { type: "MOVE_SLIDE"; from: number; to: number }
 
-type SlideImage = { id: string; url?: string; filename: string; width?: number; height?: number }
+type SlideImage = { id: string; url?: string; thumbnail_url?: string; filename: string; width?: number; height?: number }
 
 function reducer(state: Draft, action: Action): Draft {
   switch (action.type) {
@@ -60,6 +60,7 @@ function reducer(state: Draft, action: Action): Draft {
             tempId: `tmp-${Date.now()}-${img.id}`,
             image_id: img.id,
             url: img.url,
+            thumbnail_url: img.thumbnail_url,
             filename: img.filename,
             width: img.width,
             height: img.height,
@@ -128,6 +129,7 @@ export default function StoryEditPage() {
           id: s.id,
           image_id: s.image_id,
           url: s.url,
+          thumbnail_url: s.thumbnail_url,
           filename: s.filename,
           width: s.width,
           height: s.height,
@@ -209,6 +211,7 @@ export default function StoryEditPage() {
     transition: s.transition,
     caption: s.caption || undefined,
     url: s.url,
+    thumbnail_url: s.thumbnail_url,
     filename: s.filename,
     width: s.width,
     height: s.height,
@@ -301,9 +304,10 @@ export default function StoryEditPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: slide strip */}
         <div className={cn(
-          "flex flex-col gap-2 overflow-y-auto border-r border-border bg-muted/20 p-2.5",
-          "w-full lg:w-[152px] lg:shrink-0",
-          mobileTab !== "slides" && "hidden lg:flex"
+          "overflow-y-auto border-r border-border bg-muted/20 p-2.5",
+          "grid grid-cols-3 gap-2 content-start", // mobile: 3-col grid
+          "lg:w-[152px] lg:shrink-0 lg:flex lg:flex-col lg:gap-2", // desktop: flex column
+          mobileTab !== "slides" ? "hidden lg:flex lg:flex-col" : "w-full",
         )}>
           {draft.slides.map((slide, i) => (
             <SlideThumb
@@ -317,10 +321,10 @@ export default function StoryEditPage() {
           ))}
           <button
             onClick={() => setPickerOpen(true)}
-            className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-1 lg:gap-1.5 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
           >
-            <Plus className="size-5" />
-            <span className="text-[11px] font-medium">Add slides</span>
+            <Plus className="size-4 lg:size-5" />
+            <span className="text-[9px] lg:text-[11px] font-medium">Add slides</span>
           </button>
         </div>
 
@@ -368,6 +372,7 @@ export default function StoryEditPage() {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onAdd={handleAddImages}
+        currentSlideCount={draft.slides.length}
       />
 
       {/* Music picker */}
@@ -492,7 +497,7 @@ function SlideThumb({
     >
       {slide.url ? (
         <VaultImage
-          src={slide.url}
+          src={slide.thumbnail_url ?? slide.url}
           alt={slide.filename}
           fill
           className="object-cover"
@@ -544,7 +549,7 @@ function SlideView({
           className="absolute inset-0 scale-110 overflow-hidden"
           style={{ filter: "blur(32px) brightness(0.3) saturate(1.4)" }}
         >
-          <VaultImage src={slide.url} alt="" fill className="object-cover" aria-hidden />
+          <VaultImage src={slide.thumbnail_url ?? slide.url} alt="" fill className="object-cover" aria-hidden />
         </div>
       )}
 
@@ -659,7 +664,7 @@ function SlideConfig({
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="relative aspect-video w-full bg-muted">
             <VaultImage
-              src={slide.url}
+              src={slide.thumbnail_url ?? slide.url}
               alt={slide.filename}
               fill
               className="object-cover"
@@ -691,18 +696,22 @@ function SlideConfig({
 // ---------- Image picker dialog ----------
 
 const PICKER_LIMIT = 18
+const MAX_SLIDES = 8
 
 function StoryImagePicker({
-  open, onOpenChange, onAdd,
+  open, onOpenChange, onAdd, currentSlideCount,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (images: SlideImage[]) => void
+  currentSlideCount: number
 }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedOrder, setSelectedOrder] = useState<string[]>([])
   const { data, isLoading } = useMedia(page, PICKER_LIMIT)
+
+  const remaining = MAX_SLIDES - currentSlideCount
 
   const photos = (data?.items ?? []).filter((img) => {
     if (img.status !== "ready" || !img.url) return false
@@ -713,28 +722,30 @@ function StoryImagePicker({
   const totalPages = data ? Math.ceil(data.total / PICKER_LIMIT) : 0
 
   const toggle = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
+    setSelectedOrder((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= remaining) return prev
+      return [...prev, id]
     })
   }
 
   const handleConfirm = () => {
-    const selected = (data?.items ?? []).filter((img) => selectedIds.has(img.id))
+    const itemMap = new Map((data?.items ?? []).map((img) => [img.id, img]))
+    const selected = selectedOrder.map((id) => itemMap.get(id)).filter((img): img is NonNullable<typeof img> => img != null)
     onAdd(selected.map((img) => ({
       id: img.id,
       url: img.url,
+      thumbnail_url: img.thumbnail_url,
       filename: img.filename,
       width: img.width,
       height: img.height,
     })))
-    setSelectedIds(new Set())
+    setSelectedOrder([])
     onOpenChange(false)
   }
 
   const handleClose = (next: boolean) => {
-    if (!next) { setSelectedIds(new Set()); setSearch("") }
+    if (!next) { setSelectedOrder([]); setSearch("") }
     onOpenChange(next)
   }
 
@@ -743,7 +754,7 @@ function StoryImagePicker({
       open={open}
       onOpenChange={handleClose}
       title="Add photos to story"
-      description="Select photos — each becomes a slide in sequence."
+      description={remaining <= 0 ? `Story is full (${MAX_SLIDES} slides max).` : `Select up to ${remaining} more photo${remaining === 1 ? "" : "s"} — each becomes a slide.`}
       searchPlaceholder="Filter by filename…"
       isLoading={isLoading}
       search={search}
@@ -755,31 +766,34 @@ function StoryImagePicker({
         <Button
           size="sm"
           onClick={handleConfirm}
-          disabled={selectedIds.size === 0}
+          disabled={selectedOrder.length === 0}
           className="gap-1.5"
         >
           <Images className="size-3.5" />
-          {selectedIds.size > 0
-            ? `Add ${selectedIds.size} ${selectedIds.size === 1 ? "slide" : "slides"}`
+          {selectedOrder.length > 0
+            ? `Add ${selectedOrder.length} ${selectedOrder.length === 1 ? "slide" : "slides"}`
             : "Select photos"}
         </Button>
       }
     >
-      {photos.length === 0 ? (
+      {remaining <= 0 ? (
+        <PickerEmpty text={`You've reached the ${MAX_SLIDES}-slide limit. Remove a slide to add more.`} />
+      ) : photos.length === 0 ? (
         <PickerEmpty text={search ? "No photos match your search." : "No photos yet."} />
       ) : (
         <div className="grid grid-cols-3 gap-3 pb-1">
           {photos.map((img) => {
-            const selected = selectedIds.has(img.id)
+            const orderPos = selectedOrder.indexOf(img.id)
+            const selected = orderPos !== -1
+            const atLimit = !selected && selectedOrder.length >= remaining
             return (
               <button
                 key={img.id}
                 onClick={() => toggle(img.id)}
+                disabled={atLimit}
                 className={cn(
                   "group relative aspect-square overflow-hidden rounded-xl bg-muted transition-all duration-150",
-                  selected
-                    ? "ring-[3px] ring-inset ring-primary"
-                    : "hover:opacity-90"
+                  selected ? "ring-[3px] ring-inset ring-primary" : atLimit ? "opacity-40 cursor-not-allowed" : "hover:opacity-90"
                 )}
               >
                 <VaultImage
@@ -788,15 +802,13 @@ function StoryImagePicker({
                   fill
                   className="object-cover"
                 />
-                <div className={cn(
-                  "absolute inset-0 flex items-center justify-center transition-opacity duration-150",
-                  selected ? "bg-primary/25 opacity-100" : "opacity-0"
-                )}>
-                  <div className="flex size-7 items-center justify-center rounded-full bg-primary shadow-md">
-                    <Check className="size-4 text-primary-foreground" />
+                {selected ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-primary/25">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-primary shadow-md">
+                      <span className="text-xs font-bold text-primary-foreground">{orderPos + 1}</span>
+                    </div>
                   </div>
-                </div>
-                {!selected && (
+                ) : (
                   <div className="absolute right-2 top-2 size-5 rounded-full border-2 border-white/70 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
                 )}
               </button>

@@ -109,6 +109,7 @@ export type StorySlide = {
   width?: number
   height?: number
   url?: string
+  thumbnail_url?: string
 }
 
 export type SpotifyTrack = {

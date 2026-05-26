@@ -123,7 +123,7 @@ export default function ImageDetailPage() {
         </div>
 
         {!isLoading && image && (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {/* Favourite toggle */}
             {image.status === "ready" && (
               <Button
@@ -133,9 +133,10 @@ export default function ImageDetailPage() {
                 className={cn("gap-2", image.is_favourited && "border-rose-400/60 text-rose-500 hover:text-rose-500")}
                 onClick={handleFavourite}
                 disabled={toggleFavourite.isPending}
+                aria-label={image.is_favourited ? "Favourited" : "Favourite"}
               >
                 <Heart className={cn("size-4", image.is_favourited && "fill-rose-500")} />
-                {image.is_favourited ? "Favourited" : "Favourite"}
+                <span className="hidden sm:inline">{image.is_favourited ? "Favourited" : "Favourite"}</span>
               </Button>
             )}
 
@@ -147,9 +148,10 @@ export default function ImageDetailPage() {
                   size="sm"
                   className="gap-2"
                   onClick={() => setAlbumDialogOpen(true)}
+                  aria-label="Add to album"
                 >
                   <FolderPlus className="size-4" />
-                  Add to album
+                  <span className="hidden sm:inline">Add to album</span>
                 </Button>
                 <AlbumPickerDialog
                   open={albumDialogOpen}
@@ -164,10 +166,11 @@ export default function ImageDetailPage() {
                 href={image.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Download"
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
               >
                 <Download className="size-4" />
-                Download
+                <span className="hidden sm:inline">Download</span>
               </a>
             )}
             <AlertDialog>
@@ -176,13 +179,14 @@ export default function ImageDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    aria-label="Delete"
                     className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     disabled={deleteMedia.isPending}
                   />
                 }
               >
                 <Trash2 className="size-4" />
-                Delete
+                <span className="hidden sm:inline">Delete</span>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

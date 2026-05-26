@@ -218,7 +218,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
           >
             {slide.url ? (
               <VaultImage
-                src={slide.url}
+                src={slide.thumbnail_url ?? slide.url}
                 alt={slide.filename}
                 fill
                 className="object-cover"
