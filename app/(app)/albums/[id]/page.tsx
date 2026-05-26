@@ -88,7 +88,7 @@ export default function AlbumDetailPage() {
           Albums
         </Link>
         <div className="flex items-center gap-2">
-          {slideshowImages.length > 0 && (
+          {(data?.total ?? 0) > 0 && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => openSlideshow(0)}>
               <Play className="size-4" />
               Slideshow
