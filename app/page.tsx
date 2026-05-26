@@ -170,7 +170,7 @@ function Discovery({ photos, loading, exhausted, sentinelRef }: DiscoveryProps) 
           <EmptyDiscovery />
         ) : (
           <>
-            <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {photos.map((photo) => (
                 <DiscoveryCard key={photo.id} photo={photo} />
               ))}
@@ -197,27 +197,20 @@ function Discovery({ photos, loading, exhausted, sentinelRef }: DiscoveryProps) 
 
 function DiscoveryCard({ photo }: { photo: ImageModel }) {
   const [loaded, setLoaded] = useState(false)
-  const aspectStyle =
-    photo.width && photo.height
-      ? { aspectRatio: `${photo.width}/${photo.height}` }
-      : { aspectRatio: "1/1" }
-
   return (
-    <div className="group mb-3 break-inside-avoid overflow-hidden rounded-xl bg-muted">
-      <div className="relative overflow-hidden" style={aspectStyle}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={photo.thumbnail_url ?? photo.url!}
-          alt=""
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          className={cn(
-            "w-full object-cover transition-[opacity,transform,scale] duration-500 group-hover:scale-105",
-            loaded ? "opacity-100" : "opacity-0"
-          )}
-        />
-        {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
-      </div>
+    <div className="group relative aspect-square overflow-hidden rounded-xl bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photo.thumbnail_url ?? photo.url!}
+        alt=""
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        className={cn(
+          "absolute inset-0 h-full w-full object-cover transition-[opacity,scale] duration-500",
+          loaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
+        )}
+      />
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
     </div>
   )
 }
