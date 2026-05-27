@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToggleFavourite } from "@/hooks/use-favourites"
 import type { Image as ImageModel } from "@/lib/api"
 import gsap from "@/lib/gsap"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 
 const AUTOPLAY_MS = 5000
 
@@ -71,42 +72,47 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
       ref={containerRef}
       className="relative h-[480px] w-full overflow-hidden rounded-2xl bg-black"
     >
-      {images.map((image, i) => (
-        <div
-          key={image.id}
-          ref={(el) => { slidesRef.current[i] = el }}
-          className="absolute inset-0"
-          style={{ opacity: i === 0 ? 1 : 0 }}
-        >
-          {/* Blurred background — thumbnail is fine here since it's blurred anyway */}
-          {(image.thumbnail_url ?? image.url) && (
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)", transform: "scale(1.1)" }}
-            >
-              <VaultImage src={image.thumbnail_url ?? image.url!} alt="" fill className="object-cover" aria-hidden />
-            </div>
-          )}
-
-          {/* Foreground image — centered, contained */}
-          <Link
-            href={`/images/${image.id}`}
-            className="absolute inset-0 flex items-center justify-center p-8"
+      {images.map((image, i) => {
+        const src = displaySrc(image)
+        return (
+          <div
+            key={image.id}
+            ref={(el) => { slidesRef.current[i] = el }}
+            className="absolute inset-0"
+            style={{ opacity: i === 0 ? 1 : 0 }}
           >
-            {(image.thumbnail_url ?? image.url) && (
-              <VaultImage
-                src={image.thumbnail_url ?? image.url!}
-                alt={image.filename}
-                width={image.width ?? 1200}
-                height={image.height ?? 900}
-                className="max-h-full max-w-full object-contain drop-shadow-2xl select-none"
-                priority={i === 0}
-                draggable={false}
-              />
+            {/* Blurred background — decorative, hidden when no thumbnail available */}
+            {src && (
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)", transform: "scale(1.1)" }}
+              >
+                <VaultImage src={src} alt="" fill className="object-cover" aria-hidden />
+              </div>
             )}
-          </Link>
-        </div>
-      ))}
+
+            {/* Foreground image — centered, contained */}
+            <Link
+              href={`/images/${image.id}`}
+              className="absolute inset-0 flex items-center justify-center p-8"
+            >
+              {src ? (
+                <VaultImage
+                  src={src}
+                  alt={image.filename}
+                  width={image.width ?? 1200}
+                  height={image.height ?? 900}
+                  className="max-h-full max-w-full object-contain drop-shadow-2xl select-none"
+                  priority={i === 0}
+                  draggable={false}
+                />
+              ) : (
+                <ImageIcon className="size-12 text-white/20" />
+              )}
+            </Link>
+          </div>
+        )
+      })}
 
       {/* Gradient caption bar */}
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-6 pb-5 pt-16 pointer-events-none">

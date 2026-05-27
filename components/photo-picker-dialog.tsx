@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Check, Images } from "lucide-react"
+import { Check, Images, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useMedia } from "@/hooks/use-media"
 import { useAddToAlbum, useAlbumImages } from "@/hooks/use-albums"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 
 const LIMIT = 24
 
@@ -102,6 +103,7 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
         <div className="grid grid-cols-4 gap-2.5 pb-1">
           {readyPhotos.map((img) => {
             const selected = selectedIds.has(img.id)
+            const src = displaySrc(img)
             return (
               <button
                 key={img.id}
@@ -113,12 +115,18 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
                     : "hover:opacity-90"
                 )}
               >
-                <VaultImage
-                  src={img.thumbnail_url ?? img.url!}
-                  alt={img.filename}
-                  fill
-                  className="object-cover"
-                />
+                {src ? (
+                  <VaultImage
+                    src={src}
+                    alt={img.filename}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <ImageIcon className="size-6 text-muted-foreground/30" />
+                  </div>
+                )}
                 {/* Selection overlay */}
                 <div
                   className={cn(

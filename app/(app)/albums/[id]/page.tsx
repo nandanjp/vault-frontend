@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ImagePlus, Play } from "lucide-react"
+import { ArrowLeft, ImagePlus, Play, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
@@ -14,6 +14,7 @@ import { useAlbums, useAlbumImages, useRemoveFromAlbum, useUpdateAlbum } from "@
 import { PhotoPickerDialog } from "@/components/photo-picker-dialog"
 import { AlbumSlideshow } from "@/components/album-slideshow"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import gsap from "@/lib/gsap"
 
 const LIMIT = 20
@@ -241,7 +242,7 @@ export default function AlbumDetailPage() {
   )
 }
 
-type BentoImg = { url: string; thumbnail_url?: string; filename: string }
+type BentoImg = { url: string; thumbnail_url?: string; filename: string; width?: number }
 
 function BentoHero({ images }: { images: BentoImg[] }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -319,15 +320,22 @@ function BentoGrid({ images }: { images: BentoImg[] }) {
 
 function BentoCell({ img, className }: { img: BentoImg; className?: string }) {
   const [loaded, setLoaded] = useState(false)
+  const src = displaySrc(img)
   return (
     <div data-bento className={cn("relative overflow-hidden bg-muted", className)}>
-      <VaultImage
-        src={img.thumbnail_url ?? img.url}
-        alt={img.filename}
-        fill
-        onLoad={() => setLoaded(true)}
-        className={cn("object-cover transition-[opacity,transform,scale] duration-500", loaded && "hover:scale-105")}
-      />
+      {src ? (
+        <VaultImage
+          src={src}
+          alt={img.filename}
+          fill
+          onLoad={() => setLoaded(true)}
+          className={cn("object-cover transition-[opacity,transform,scale] duration-500", loaded && "hover:scale-105")}
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <ImageIcon className="size-8 text-muted-foreground/25" />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { FolderOpen, Check } from "lucide-react"
+import { FolderOpen, Check, ImageIcon } from "lucide-react"
 import { PickerDialog, PickerEmpty } from "@/components/picker-dialog"
 import { useAlbums, useAddToAlbum } from "@/hooks/use-albums"
 import { useMediaItem } from "@/hooks/use-media"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import type { Album } from "@/lib/api"
 
 interface AlbumPickerDialogProps {
@@ -34,9 +35,16 @@ export function AlbumPickerDialog({ open, onOpenChange, imageId }: AlbumPickerDi
     )
   }
 
-  const imagePreview = image?.url ? (
+  const imgSrc = image ? displaySrc(image) : null
+  const imagePreview = image ? (
     <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted shadow-sm">
-      <VaultImage src={image.thumbnail_url ?? image.url} alt={image.filename} fill className="object-cover" />
+      {imgSrc ? (
+        <VaultImage src={imgSrc} alt={image.filename} fill className="object-cover" />
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <ImageIcon className="size-5 text-muted-foreground/30" />
+        </div>
+      )}
     </div>
   ) : null
 

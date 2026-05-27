@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Trash2, AlertCircle, Loader2 } from "lucide-react"
+import { Trash2, AlertCircle, Loader2, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { Image as ImageModel } from "@/lib/api"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 
 interface ImageCardProps {
   image: ImageModel
@@ -46,27 +47,35 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
     ? { aspectRatio: `${image.width}/${image.height}` }
     : undefined
 
+  const src = displaySrc(image)
+
   const imageArea = (
     <div
       className={cn("relative w-full overflow-hidden bg-muted", !natural && "aspect-square")}
       style={aspectStyle}
     >
-      {isReady && image.url ? (
-        <>
-          <VaultImage
-            src={image.thumbnail_url ?? image.url}
-            alt={image.filename}
-            width={image.width ?? 400}
-            height={image.height ?? 400}
-            onLoad={() => setImgLoaded(true)}
-            className={cn("h-full w-full object-cover transition-[opacity,transform,scale] duration-300", imgLoaded && "group-hover:scale-105")}
-            loading="lazy"
-          />
-          {/* Filename overlay — slides up on hover */}
-          <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 transition-[transform,translate] duration-300 ease-out group-hover:translate-y-0">
-            <p className="truncate text-xs font-medium text-white/90">{image.filename}</p>
+      {isReady ? (
+        src ? (
+          <>
+            <VaultImage
+              src={src}
+              alt={image.filename}
+              width={image.width ?? 400}
+              height={image.height ?? 400}
+              onLoad={() => setImgLoaded(true)}
+              className={cn("h-full w-full object-cover transition-[opacity,transform,scale] duration-300", imgLoaded && "group-hover:scale-105")}
+              loading="lazy"
+            />
+            {/* Filename overlay — slides up on hover */}
+            <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 transition-[transform,translate] duration-300 ease-out group-hover:translate-y-0">
+              <p className="truncate text-xs font-medium text-white/90">{image.filename}</p>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-muted-foreground">
+            <ImageIcon className="size-8 opacity-40" />
           </div>
-        </>
+        )
       ) : isFailed ? (
         <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <AlertCircle className="size-8 text-destructive/60" />

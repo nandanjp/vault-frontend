@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Image as ImageModel } from "@/lib/api"
+import { displaySrc } from "@/lib/display-src"
 
 const PAGE_SIZE = 20
 
@@ -197,20 +198,29 @@ function Discovery({ photos, loading, exhausted, sentinelRef }: DiscoveryProps) 
 
 function DiscoveryCard({ photo }: { photo: ImageModel }) {
   const [loaded, setLoaded] = useState(false)
+  const src = displaySrc(photo)
   return (
     <div className="group relative aspect-square overflow-hidden rounded-xl bg-muted">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={photo.thumbnail_url ?? photo.url!}
-        alt=""
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        className={cn(
-          "absolute inset-0 h-full w-full object-cover transition-[opacity,scale] duration-500",
-          loaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
-        )}
-      />
-      {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
+      {src ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt=""
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover transition-[opacity,scale] duration-500",
+              loaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
+            )}
+          />
+          {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
+        </>
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <ImageIcon className="size-8 text-muted-foreground/25" />
+        </div>
+      )}
     </div>
   )
 }

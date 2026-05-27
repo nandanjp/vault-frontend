@@ -24,6 +24,7 @@ import { useAlbums } from "@/hooks/use-albums"
 import { AlbumPickerDialog } from "@/components/album-picker-dialog"
 import { FilterPanel } from "@/components/filter-panel"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import gsap from "@/lib/gsap"
 
 function formatBytes(n: number) {
@@ -53,6 +54,7 @@ export default function ImageDetailPage() {
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false)
   const [filterCss, setFilterCss] = useState("none")
   const heartBtnRef = useRef<HTMLButtonElement>(null)
+  const glowSrc = image?.status === "ready" ? displaySrc(image) : null
 
   const handleFavourite = () => {
     if (!image) return
@@ -215,8 +217,8 @@ export default function ImageDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Image panel */}
         <div className="relative">
-          {/* Ambient glow — thumbnail is fine here since it's blurred */}
-          {image?.status === "ready" && image.url && (
+          {/* Ambient glow — always uses thumbnail (blurred, so quality doesn't matter) */}
+          {glowSrc && (
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl blur-[60px] saturate-[2] transition-opacity duration-700",
@@ -224,16 +226,16 @@ export default function ImageDetailPage() {
               )}
               style={{ transform: "scale(1.15)" }}
             >
-              <VaultImage src={image.thumbnail_url ?? image.url} alt="" fill className="object-cover" aria-hidden />
+              <VaultImage src={glowSrc} alt="" fill className="object-cover" aria-hidden />
             </div>
           )}
         <div className="overflow-hidden rounded-xl border border-border bg-muted">
           {isLoading ? (
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
-          ) : image?.status === "ready" && image.url ? (
+          ) : image?.status === "ready" && glowSrc ? (
             <div className="flex min-h-96 items-center justify-center p-6">
               <VaultImage
-                src={image.thumbnail_url ?? image.url}
+                src={glowSrc}
                 alt={image.filename}
                 width={image.width ?? 1200}
                 height={image.height ?? 900}

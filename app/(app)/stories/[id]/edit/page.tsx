@@ -15,6 +15,7 @@ import { useMedia } from "@/hooks/use-media"
 import { StoryPlayer } from "@/components/story-player"
 import { SpotifyPickerDialog } from "@/components/spotify-picker-dialog"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import type { StorySlide, StoryTransition, SlideInput, SpotifyTrack } from "@/lib/api"
 
 // ---------- Draft types ----------
@@ -305,8 +306,8 @@ export default function StoryEditPage() {
         {/* Left: slide strip */}
         <div className={cn(
           "overflow-y-auto border-r border-border bg-muted/20 p-2.5",
-          "grid grid-cols-3 gap-2 content-start", // mobile: 3-col grid
-          "lg:w-[152px] lg:shrink-0 lg:flex lg:flex-col lg:gap-2", // desktop: flex column
+          "grid grid-cols-3 gap-3 content-start pb-4", // mobile: 3-col grid
+          "lg:w-[152px] lg:shrink-0 lg:flex lg:flex-col lg:gap-3 lg:pb-4", // desktop: flex column
           mobileTab !== "slides" ? "hidden lg:flex lg:flex-col" : "w-full",
         )}>
           {draft.slides.map((slide, i) => (
@@ -335,11 +336,11 @@ export default function StoryEditPage() {
 
         {/* Right: slide config + story music */}
         <div className={cn(
-          "flex flex-col overflow-y-auto border-l border-border",
+          "flex flex-col border-l border-border",
           "w-full lg:w-[272px] lg:shrink-0",
           mobileTab !== "config" && "hidden lg:flex"
         )}>
-          <div className="flex-1 p-5">
+          <div className="flex-1 min-h-0 overflow-y-auto p-5">
             {activeSlide ? (
               <SlideConfig
                 slide={activeSlide}
@@ -357,7 +358,7 @@ export default function StoryEditPage() {
           </div>
 
           {/* Story music section — always visible */}
-          <div className="border-t border-border p-5">
+          <div className="shrink-0 border-t border-border p-5">
             <MusicSection
               selectedTrack={selectedTrack}
               onOpen={() => setMusicOpen(true)}
@@ -485,6 +486,7 @@ function SlideThumb({
   onSelect: () => void
   onRemove: () => void
 }) {
+  const src = displaySrc(slide)
   return (
     <div
       className={cn(
@@ -495,13 +497,8 @@ function SlideThumb({
       )}
       onClick={onSelect}
     >
-      {slide.url ? (
-        <VaultImage
-          src={slide.thumbnail_url ?? slide.url}
-          alt={slide.filename}
-          fill
-          className="object-cover"
-        />
+      {src ? (
+        <VaultImage src={src} alt={slide.filename} fill className="object-cover" />
       ) : (
         <div className="flex h-full items-center justify-center bg-muted">
           <ImageIcon className="size-5 text-muted-foreground/40" />
@@ -541,24 +538,25 @@ function SlideView({
     )
   }
 
+  const src = displaySrc(slide)
   return (
     <div className="relative flex h-full w-full items-center justify-center">
-      {slide.url && (
+      {src && (
         <div
           key={slide.tempId}
           className="absolute inset-0 scale-110 overflow-hidden"
           style={{ filter: "blur(32px) brightness(0.3) saturate(1.4)" }}
         >
-          <VaultImage src={slide.thumbnail_url ?? slide.url} alt="" fill className="object-cover" aria-hidden />
+          <VaultImage src={src} alt="" fill className="object-cover" aria-hidden />
         </div>
       )}
 
       <div className="relative z-10 flex h-full max-h-full w-full items-center justify-center p-10">
-        {slide.url ? (
+        {src ? (
           <div className="relative h-full w-full">
             <VaultImage
               key={slide.tempId}
-              src={slide.url}
+              src={src}
               alt={slide.filename}
               fill
               className="object-contain drop-shadow-2xl"
@@ -598,6 +596,7 @@ function SlideConfig({
   onRemove: () => void
 }) {
   const durationSec = Math.round(slide.duration_ms / 1000)
+  const slideSrc = displaySrc(slide)
 
   return (
     <div className="flex flex-col gap-5">
@@ -660,15 +659,21 @@ function SlideConfig({
       </div>
 
       {/* Image info */}
-      {slide.url && (
+      {(slide.url || slide.thumbnail_url) && (
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="relative aspect-video w-full bg-muted">
-            <VaultImage
-              src={slide.thumbnail_url ?? slide.url}
-              alt={slide.filename}
-              fill
-              className="object-cover"
-            />
+            {slideSrc ? (
+              <VaultImage
+                src={slideSrc}
+                alt={slide.filename}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <ImageIcon className="size-6 text-muted-foreground/30" />
+              </div>
+            )}
           </div>
           <div className="p-2.5">
             <p className="truncate text-xs font-medium">{slide.filename}</p>
@@ -786,6 +791,7 @@ function StoryImagePicker({
             const orderPos = selectedOrder.indexOf(img.id)
             const selected = orderPos !== -1
             const atLimit = !selected && selectedOrder.length >= remaining
+            const src = displaySrc(img)
             return (
               <button
                 key={img.id}
@@ -796,12 +802,13 @@ function StoryImagePicker({
                   selected ? "ring-[3px] ring-inset ring-primary" : atLimit ? "opacity-40 cursor-not-allowed" : "hover:opacity-90"
                 )}
               >
-                <VaultImage
-                  src={img.thumbnail_url ?? img.url!}
-                  alt={img.filename}
-                  fill
-                  className="object-cover"
-                />
+                {src ? (
+                  <VaultImage src={src} alt={img.filename} fill className="object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <ImageIcon className="size-6 text-muted-foreground/30" />
+                  </div>
+                )}
                 {selected ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-primary/25">
                     <div className="flex size-7 items-center justify-center rounded-full bg-primary shadow-md">

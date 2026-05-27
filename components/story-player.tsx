@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { X, Music, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react"
+import { X, Music, ChevronLeft, ChevronRight, Pause, Play, ImageIcon } from "lucide-react"
 
 function MusicBars() {
   return (
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import type { StorySlide, SpotifyTrack } from "@/lib/api"
 import gsap from "@/lib/gsap"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 
 interface StoryPlayerProps {
   slides: StorySlide[]
@@ -209,28 +210,31 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
         <div className="absolute left-1/2 top-3 z-30 h-[15px] w-20 -translate-x-1/2 rounded-full bg-zinc-800" />
 
         {/* All slides stacked — loading="eager" on all so hidden slides pre-load */}
-        {slides.map((slide, i) => (
-          <div
-            key={slide.id}
-            ref={(el) => { slideEls.current[i] = el }}
-            className="absolute inset-0"
-            style={{ opacity: i === initialIndex ? 1 : 0 }}
-          >
-            {slide.url ? (
-              <VaultImage
-                src={slide.thumbnail_url ?? slide.url}
-                alt={slide.filename}
-                fill
-                className="object-cover"
-                loading="eager"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-zinc-900">
-                <span className="text-sm text-zinc-600">No image</span>
-              </div>
-            )}
-          </div>
-        ))}
+        {slides.map((slide, i) => {
+          const src = displaySrc(slide)
+          return (
+            <div
+              key={slide.id}
+              ref={(el) => { slideEls.current[i] = el }}
+              className="absolute inset-0"
+              style={{ opacity: i === initialIndex ? 1 : 0 }}
+            >
+              {src ? (
+                <VaultImage
+                  src={src}
+                  alt={slide.filename}
+                  fill
+                  className="object-cover"
+                  loading="eager"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-zinc-900">
+                  <ImageIcon className="size-10 text-zinc-600" />
+                </div>
+              )}
+            </div>
+          )
+        })}
 
         {/* Gradient overlays */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-black/70 to-transparent" />

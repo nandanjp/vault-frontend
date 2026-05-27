@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
-import { FolderOpen, FolderPlus, Trash2 } from "lucide-react"
+import { FolderOpen, FolderPlus, Trash2, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,6 +14,7 @@ import {
 import { useAlbums, useAlbumImages, useCreateAlbum, useDeleteAlbum } from "@/hooks/use-albums"
 import type { Album } from "@/lib/api"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import gsap from "@/lib/gsap"
 
 const ALBUMS_PER_PAGE = 12
@@ -142,7 +143,7 @@ function AlbumCard({ album }: { album: Album }) {
     <div data-card className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:shadow-md transition-shadow">
       <Link href={`/albums/${album.id}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
-          <AlbumCoverGrid thumbs={thumbs.map((i) => ({ url: i.url!, filename: i.filename }))} name={album.name} />
+          <AlbumCoverGrid thumbs={thumbs.map((i) => ({ url: displaySrc(i), filename: i.filename }))} name={album.name} />
         </div>
         <div className="p-3">
           <p className="truncate text-sm font-medium">{album.name}</p>
@@ -190,7 +191,7 @@ function AlbumCard({ album }: { album: Album }) {
   )
 }
 
-function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: string }[]; name: string }) {
+function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string | null; filename: string }[]; name: string }) {
   if (thumbs.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -200,8 +201,12 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
   }
 
   if (thumbs.length === 1) {
-    return (
+    return thumbs[0].url ? (
       <VaultImage src={thumbs[0].url} alt={thumbs[0].filename} fill className="object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105" />
+    ) : (
+      <div className="flex h-full items-center justify-center">
+        <ImageIcon className="size-10 text-muted-foreground/25" />
+      </div>
     )
   }
 
@@ -210,13 +215,17 @@ function AlbumCoverGrid({ thumbs, name }: { thumbs: { url: string; filename: str
     <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="relative overflow-hidden bg-muted">
-          {thumbs[i] ? (
+          {thumbs[i]?.url ? (
             <VaultImage
-              src={thumbs[i].url}
+              src={thumbs[i].url!}
               alt={thumbs[i].filename}
               fill
               className="object-cover transition-[opacity,transform,scale] duration-300 group-hover:scale-105"
             />
+          ) : thumbs[i] ? (
+            <div className="flex h-full items-center justify-center">
+              <ImageIcon className="size-5 text-muted-foreground/25" />
+            </div>
           ) : null}
         </div>
       ))}

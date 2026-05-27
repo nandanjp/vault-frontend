@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
-import { Upload, FolderOpen, Heart, Images, ChevronRight } from "lucide-react"
+import { Upload, FolderOpen, Heart, Images, ChevronRight, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { ImageCardSkeleton } from "@/components/image-card"
@@ -12,6 +12,7 @@ import { useGallery } from "@/hooks/use-gallery"
 import { useAlbums } from "@/hooks/use-albums"
 import { useFavourites } from "@/hooks/use-favourites"
 import { VaultImage } from "@/components/vault-image"
+import { displaySrc } from "@/lib/display-src"
 import gsap from "@/lib/gsap"
 
 export default function DashboardPage() {
@@ -116,13 +117,13 @@ function Section({
 
 function FavStrip({ image }: { image: { id: string; url?: string; thumbnail_url?: string; filename: string; width?: number; height?: number } }) {
   const [loaded, setLoaded] = useState(false)
-  const src = image.thumbnail_url ?? image.url
+  const src = displaySrc(image)
   return (
     <Link
       href={`/images/${image.id}`}
       className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
     >
-      {src && (
+      {src ? (
         <VaultImage
           src={src}
           alt={image.filename}
@@ -130,6 +131,10 @@ function FavStrip({ image }: { image: { id: string; url?: string; thumbnail_url?
           onLoad={() => setLoaded(true)}
           className={cn("object-cover transition-[opacity,transform,scale] duration-300", loaded && "group-hover:scale-105")}
         />
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <ImageIcon className="size-6 text-muted-foreground/30" />
+        </div>
       )}
     </Link>
   )
