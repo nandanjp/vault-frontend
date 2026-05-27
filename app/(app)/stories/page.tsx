@@ -56,7 +56,7 @@ export default function StoriesPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => <StorySkeleton key={i} />)}
         </div>
       )}
@@ -78,7 +78,7 @@ export default function StoriesPage() {
       )}
 
       {!isLoading && stories && stories.length > 0 && (
-        <div ref={gridRef} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div ref={gridRef} className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
           {stories.map((story) => (
             <StoryCard key={story.id} story={story} />
           ))}

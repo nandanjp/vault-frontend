@@ -64,24 +64,23 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
   if (!images.length) return null
 
   return (
-    // Backdrop — full-screen on mobile, padded on sm+; click outside to close
+    // Backdrop — padded on all screen sizes; click outside to close
     <div
       ref={overlayRef}
       style={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 sm:p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 sm:p-6 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      {/* Modal — full-screen on mobile, constrained on sm+ */}
+      {/* Modal — constrained on all screen sizes */}
       <div
         ref={modalRef}
         style={{ opacity: 0 }}
         className={cn(
-          "relative flex flex-col overflow-hidden bg-black shadow-2xl",
-          "w-full h-full sm:rounded-2xl",
-          "sm:transition-[width,height] sm:duration-300 sm:ease-in-out",
+          "relative flex flex-col overflow-hidden bg-black shadow-2xl rounded-2xl",
+          "transition-[width,height] duration-300 ease-in-out",
           expanded
-            ? "sm:h-[calc(100vh-48px)] sm:w-[calc(100vw-48px)]"
-            : "sm:h-[min(88vh,680px)] sm:w-[min(90vw,920px)]"
+            ? "h-[calc(100dvh-32px)] w-[calc(100vw-32px)] sm:h-[calc(100dvh-48px)] sm:w-[calc(100vw-48px)]"
+            : "h-[min(88dvh,680px)] w-[min(92vw,920px)]"
         )}
       >
         {/* Controls — overlaid top-right on the carousel */}
@@ -115,7 +114,7 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
         <div className="shrink-0 border-t border-white/10 bg-black/80 px-3 pt-4 pb-3">
           <div
             ref={thumbStripRef}
-            className="flex gap-2 overflow-x-auto scrollbar-none"
+            className="flex gap-2 overflow-x-auto scrollbar-none py-1 px-0.5"
           >
             {images.map((image, abs) => {
               const isSelected = abs === current
@@ -126,26 +125,28 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
                   ref={(el) => { thumbBtnRefs.current[abs] = el }}
                   onClick={() => goTo(abs)}
                   className={cn(
-                    "shrink-0 overflow-hidden rounded-xl border transition-all duration-150",
+                    "shrink-0 rounded-xl border transition-all duration-150",
                     "h-14 aspect-[4/3]",
                     isSelected
-                      ? "border-white/60 opacity-100 ring-2 ring-white shadow-md"
+                      ? "border-white/60 opacity-100 ring-1 ring-white shadow-md"
                       : "border-white/10 bg-white/5 opacity-45 hover:opacity-75 hover:border-white/25"
                   )}
                 >
-                  {src ? (
-                    <VaultImage
-                      src={src}
-                      alt={image.filename}
-                      width={107}
-                      height={80}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <ImageIcon className="size-4 text-white/20" />
-                    </div>
-                  )}
+                  <div className="overflow-hidden rounded-[10px] h-full w-full">
+                    {src ? (
+                      <VaultImage
+                        src={src}
+                        alt={image.filename}
+                        width={107}
+                        height={80}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <ImageIcon className="size-4 text-white/20" />
+                      </div>
+                    )}
+                  </div>
                 </button>
               )
             })}
