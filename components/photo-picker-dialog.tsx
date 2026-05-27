@@ -100,7 +100,7 @@ export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDi
       {readyPhotos.length === 0 ? (
         <PickerEmpty text={search ? "No photos match your search." : skippedCount > 0 ? "All your photos are already in this album." : "No photos yet."} />
       ) : (
-        <div className="grid grid-cols-4 gap-2.5 pb-1">
+        <div className="grid grid-cols-3 gap-2.5 pb-1 sm:grid-cols-4">
           {readyPhotos.map((img) => {
             const selected = selectedIds.has(img.id)
             const src = displaySrc(img)

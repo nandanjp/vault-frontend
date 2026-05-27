@@ -48,7 +48,7 @@ export function PickerDialog({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 80)
+    if (open) setTimeout(() => inputRef.current?.focus(), 350)
   }, [open])
 
   const hasPagination = onPageChange && totalPages && totalPages > 1

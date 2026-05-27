@@ -94,7 +94,7 @@ function StoryCard({ story }: { story: Story }) {
   return (
     <div
       data-card
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:shadow-md transition-shadow"
+      className="group relative flex flex-col min-w-0 overflow-hidden rounded-xl border border-border bg-card hover:shadow-md transition-shadow"
     >
       {/* Cover — 9:16 aspect ratio */}
       <Link href={`/stories/${story.id}/edit`} className="block">
@@ -128,8 +128,8 @@ function StoryCard({ story }: { story: Story }) {
         </div>
       </Link>
 
-      {/* Delete on hover */}
-      <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
+      {/* Delete — always visible on mobile, hover-only on desktop */}
+      <div className="absolute right-2 top-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
         <AlertDialog>
           <AlertDialogTrigger
             render={

@@ -119,7 +119,7 @@ export function ImageCard({ image, onDelete, isDeleting, natural, confirmTitle =
         <div
           className={cn(
             "absolute right-2 top-2 z-10 transition-opacity",
-            isReady ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+            isReady ? "sm:opacity-0 sm:group-hover:opacity-100" : "opacity-100"
           )}
         >
           <AlertDialog>
