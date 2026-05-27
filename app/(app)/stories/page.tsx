@@ -104,7 +104,7 @@ function StoryCard({ story }: { story: Story }) {
               src={story.cover_url}
               alt={story.title}
               fill
-              className="object-cover transition-[opacity,scale] duration-300 group-hover:scale-105"
+              className="object-cover transition-[opacity,scale] duration-300 sm:group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
