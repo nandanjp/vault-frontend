@@ -98,13 +98,14 @@ function StoryCard({ story }: { story: Story }) {
     >
       {/* Cover — 9:16 aspect ratio */}
       <Link href={`/stories/${story.id}/edit`} className="block">
-        <div className="relative w-full overflow-hidden bg-muted" style={{ aspectRatio: "9/16" }}>
+        <div className="relative aspect-[9/16] w-full overflow-hidden bg-muted">
           {story.cover_url ? (
             <VaultImage
               src={story.cover_url}
               alt={story.title}
-              fill
-              className="object-cover transition-[opacity,scale] duration-300 sm:group-hover:scale-105"
+              width={300}
+              height={533}
+              className="h-full w-full object-cover sm:transition-[opacity,scale] sm:duration-300 sm:group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
