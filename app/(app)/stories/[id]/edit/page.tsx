@@ -329,8 +329,8 @@ export default function StoryEditPage() {
                 <div
                     className={cn(
                         "border-border bg-muted/20 overflow-y-auto border-r p-2.5",
-                        "grid grid-cols-3 content-start gap-3 pb-4", // mobile: 3-col grid
-                        "lg:flex lg:w-[152px] lg:shrink-0 lg:flex-col lg:gap-3 lg:pb-4", // desktop: flex column
+                        "grid grid-cols-2 content-start gap-3 pb-4 sm:grid-cols-3 md:grid-cols-4",
+                        "lg:flex lg:w-[152px] lg:shrink-0 lg:flex-col lg:gap-3 lg:pb-4",
                         mobileTab !== "slides" ? "hidden lg:flex lg:flex-col" : "w-full"
                     )}
                 >
