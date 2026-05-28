@@ -4,26 +4,26 @@ import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const geistSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
+    subsets: ["latin"],
+    variable: "--font-geist-sans",
 })
 
 const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
+    subsets: ["latin"],
+    variable: "--font-geist-mono",
 })
 
 export const metadata: Metadata = {
-  title: { default: "Vault", template: "%s · Vault" },
-  description: "Fast, secure image storage and delivery.",
+    title: { default: "Vault", template: "%s · Vault" },
+    description: "Fast, secure image storage and delivery.",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  )
+    return (
+        <html lang="en" suppressHydrationWarning>
+            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+                <Providers>{children}</Providers>
+            </body>
+        </html>
+    )
 }

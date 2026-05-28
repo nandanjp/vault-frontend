@@ -8,38 +8,38 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { useLogout } from "@/hooks/use-auth"
 
 export function Nav() {
-  const logout = useLogout()
+    const logout = useLogout()
 
-  return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 font-semibold tracking-tight text-foreground hover:opacity-80 transition-opacity"
-        >
-          <Vault className="size-4 text-primary" />
-          <span>vault</span>
-        </Link>
+    return (
+        <header className="border-border bg-background/90 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-50 w-full border-b backdrop-blur">
+            <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+                <Link
+                    href="/dashboard"
+                    className="text-foreground flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
+                >
+                    <Vault className="text-primary size-4" />
+                    <span>vault</span>
+                </Link>
 
-        <div className="flex items-center gap-1">
-          <Link
-            href="/upload"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-2")}
-          >
-            <Upload className="size-4" />
-            Upload
-          </Link>
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => logout.mutate()}
-            disabled={logout.isPending}
-          >
-            Sign out
-          </Button>
-        </div>
-      </div>
-    </header>
-  )
+                <div className="flex items-center gap-1">
+                    <Link
+                        href="/upload"
+                        className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-2")}
+                    >
+                        <Upload className="size-4" />
+                        Upload
+                    </Link>
+                    <ThemeToggle />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => logout.mutate()}
+                        disabled={logout.isPending}
+                    >
+                        Sign out
+                    </Button>
+                </div>
+            </div>
+        </header>
+    )
 }

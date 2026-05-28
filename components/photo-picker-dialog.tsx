@@ -13,140 +13,162 @@ import { displaySrc } from "@/lib/display-src"
 const LIMIT = 24
 
 interface PhotoPickerDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  albumId: string
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    albumId: string
 }
 
 export function PhotoPickerDialog({ open, onOpenChange, albumId }: PhotoPickerDialogProps) {
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const { data, isLoading } = useMedia(page, LIMIT)
-  const { data: existingData } = useAlbumImages(albumId, 1, 100)
-  const addToAlbum = useAddToAlbum()
+    const [page, setPage] = useState(1)
+    const [search, setSearch] = useState("")
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const { data, isLoading } = useMedia(page, LIMIT)
+    const { data: existingData } = useAlbumImages(albumId, 1, 100)
+    const addToAlbum = useAddToAlbum()
 
-  const existingIds = useMemo(() => {
-    const ids = new Set<string>()
-    existingData?.items.forEach((img) => ids.add(img.id))
-    return ids
-  }, [existingData])
+    const existingIds = useMemo(() => {
+        const ids = new Set<string>()
+        existingData?.items.forEach((img) => ids.add(img.id))
+        return ids
+    }, [existingData])
 
-  const readyPhotos = useMemo(() => {
-    if (!data?.items) return []
-    let items = data.items.filter((img) => img.status === "ready" && img.url && !existingIds.has(img.id))
-    if (!search.trim()) return items
-    const q = search.toLowerCase()
-    return items.filter((img) => img.filename.toLowerCase().includes(q))
-  }, [data, search, existingIds])
+    const readyPhotos = useMemo(() => {
+        if (!data?.items) return []
+        const items = data.items.filter(
+            (img) => img.status === "ready" && img.url && !existingIds.has(img.id)
+        )
+        if (!search.trim()) return items
+        const q = search.toLowerCase()
+        return items.filter((img) => img.filename.toLowerCase().includes(q))
+    }, [data, search, existingIds])
 
-  const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
+    const totalPages = data ? Math.ceil(data.total / LIMIT) : 0
 
-  const toggle = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
+    const toggle = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
 
-  const handleConfirm = () => {
-    if (selectedIds.size === 0) return
-    addToAlbum.mutate(
-      { albumId, imageIds: Array.from(selectedIds) },
-      { onSuccess: () => { setSelectedIds(new Set()); onOpenChange(false) } }
-    )
-  }
+    const handleConfirm = () => {
+        if (selectedIds.size === 0) return
+        addToAlbum.mutate(
+            { albumId, imageIds: Array.from(selectedIds) },
+            {
+                onSuccess: () => {
+                    setSelectedIds(new Set())
+                    onOpenChange(false)
+                },
+            }
+        )
+    }
 
-  const handleClose = (next: boolean) => {
-    if (!next) { setSelectedIds(new Set()); setSearch("") }
-    onOpenChange(next)
-  }
+    const handleClose = (next: boolean) => {
+        if (!next) {
+            setSelectedIds(new Set())
+            setSearch("")
+        }
+        onOpenChange(next)
+    }
 
-  const selectedCount = selectedIds.size
-  const skippedCount = existingIds.size
+    const selectedCount = selectedIds.size
+    const skippedCount = existingIds.size
 
-  return (
-    <PickerDialog
-      open={open}
-      onOpenChange={handleClose}
-      title="Add photos to album"
-      description={
-        skippedCount > 0
-          ? `${skippedCount} already in album ${skippedCount === 1 ? "photo is" : "photos are"} hidden.`
-          : "Tap photos to select them, then confirm."
-      }
-      searchPlaceholder="Filter by filename…"
-      isLoading={isLoading}
-      search={search}
-      onSearchChange={(q) => { setSearch(q); setPage(1) }}
-      page={page}
-      totalPages={totalPages}
-      onPageChange={setPage}
-      footer={
-        <Button
-          size="sm"
-          onClick={handleConfirm}
-          disabled={selectedCount === 0 || addToAlbum.isPending}
-          className="gap-1.5"
-        >
-          <Images className="size-3.5" />
-          {selectedCount > 0
-            ? `Add ${selectedCount} ${selectedCount === 1 ? "photo" : "photos"}`
-            : "Select photos"}
-        </Button>
-      }
-    >
-      {readyPhotos.length === 0 ? (
-        <PickerEmpty text={search ? "No photos match your search." : skippedCount > 0 ? "All your photos are already in this album." : "No photos yet."} />
-      ) : (
-        <div className="grid grid-cols-3 gap-2.5 pb-1 sm:grid-cols-4">
-          {readyPhotos.map((img) => {
-            const selected = selectedIds.has(img.id)
-            const src = displaySrc(img)
-            return (
-              <button
-                key={img.id}
-                onClick={() => toggle(img.id)}
-                className={cn(
-                  "group relative aspect-square overflow-hidden rounded-xl bg-muted transition-all duration-150",
-                  selected
-                    ? "ring-[3px] ring-inset ring-primary"
-                    : "hover:opacity-90"
-                )}
-              >
-                {src ? (
-                  <VaultImage
-                    src={src}
-                    alt={img.filename}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <ImageIcon className="size-6 text-muted-foreground/30" />
-                  </div>
-                )}
-                {/* Selection overlay */}
-                <div
-                  className={cn(
-                    "absolute inset-0 flex items-center justify-center transition-opacity duration-150",
-                    selected ? "bg-primary/25 opacity-100" : "opacity-0"
-                  )}
+    return (
+        <PickerDialog
+            open={open}
+            onOpenChange={handleClose}
+            title="Add photos to album"
+            description={
+                skippedCount > 0
+                    ? `${skippedCount} already in album ${skippedCount === 1 ? "photo is" : "photos are"} hidden.`
+                    : "Tap photos to select them, then confirm."
+            }
+            searchPlaceholder="Filter by filename…"
+            isLoading={isLoading}
+            search={search}
+            onSearchChange={(q) => {
+                setSearch(q)
+                setPage(1)
+            }}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            footer={
+                <Button
+                    size="sm"
+                    onClick={handleConfirm}
+                    disabled={selectedCount === 0 || addToAlbum.isPending}
+                    className="gap-1.5"
                 >
-                  <div className="flex size-6 items-center justify-center rounded-full bg-primary shadow-md">
-                    <Check className="size-3.5 text-primary-foreground" />
-                  </div>
+                    <Images className="size-3.5" />
+                    {selectedCount > 0
+                        ? `Add ${selectedCount} ${selectedCount === 1 ? "photo" : "photos"}`
+                        : "Select photos"}
+                </Button>
+            }
+        >
+            {readyPhotos.length === 0 ? (
+                <PickerEmpty
+                    text={
+                        search
+                            ? "No photos match your search."
+                            : skippedCount > 0
+                              ? "All your photos are already in this album."
+                              : "No photos yet."
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-3 gap-2.5 pb-1 sm:grid-cols-4">
+                    {readyPhotos.map((img) => {
+                        const selected = selectedIds.has(img.id)
+                        const src = displaySrc(img)
+                        return (
+                            <button
+                                key={img.id}
+                                onClick={() => toggle(img.id)}
+                                className={cn(
+                                    "group bg-muted relative aspect-square overflow-hidden rounded-xl transition-all duration-150",
+                                    selected
+                                        ? "ring-primary ring-[3px] ring-inset"
+                                        : "hover:opacity-90"
+                                )}
+                            >
+                                {src ? (
+                                    <VaultImage
+                                        src={src}
+                                        alt={img.filename}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full items-center justify-center">
+                                        <ImageIcon className="text-muted-foreground/30 size-6" />
+                                    </div>
+                                )}
+                                {/* Selection overlay */}
+                                <div
+                                    className={cn(
+                                        "absolute inset-0 flex items-center justify-center transition-opacity duration-150",
+                                        selected ? "bg-primary/25 opacity-100" : "opacity-0"
+                                    )}
+                                >
+                                    <div className="bg-primary flex size-6 items-center justify-center rounded-full shadow-md">
+                                        <Check className="text-primary-foreground size-3.5" />
+                                    </div>
+                                </div>
+                                {/* Unselected checkmark circle */}
+                                {!selected && (
+                                    <div className="absolute top-1.5 right-1.5 size-5 rounded-full border-2 border-white/70 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
+                                )}
+                            </button>
+                        )
+                    })}
                 </div>
-                {/* Unselected checkmark circle */}
-                {!selected && (
-                  <div className="absolute right-1.5 top-1.5 size-5 rounded-full border-2 border-white/70 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </PickerDialog>
-  )
+            )}
+        </PickerDialog>
+    )
 }

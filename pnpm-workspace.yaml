@@ -1,6 +1,7 @@
 allowBuilds:
-  msw: set this to true or false
+    msw: set this to true or false
+    unrs-resolver: set this to true or false
 ignoredBuiltDependencies:
-  - msw
-  - sharp
-  - unrs-resolver
+    - msw
+    - sharp
+    - unrs-resolver
