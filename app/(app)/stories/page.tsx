@@ -56,7 +56,7 @@ export default function StoriesPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => <StorySkeleton key={i} />)}
         </div>
       )}
@@ -78,7 +78,7 @@ export default function StoriesPage() {
       )}
 
       {!isLoading && stories && stories.length > 0 && (
-        <div ref={gridRef} className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div ref={gridRef} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {stories.map((story) => (
             <StoryCard key={story.id} story={story} />
           ))}
@@ -98,14 +98,13 @@ function StoryCard({ story }: { story: Story }) {
     >
       {/* Cover — 9:16 aspect ratio */}
       <Link href={`/stories/${story.id}/edit`} className="block">
-        <div className="relative aspect-[9/16] w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[9/16] overflow-hidden bg-muted">
           {story.cover_url ? (
             <VaultImage
               src={story.cover_url}
               alt={story.title}
-              width={300}
-              height={533}
-              className="h-full w-full object-cover sm:transition-[opacity,scale] sm:duration-300 sm:group-hover:scale-105"
+              fill
+              className="object-cover sm:transition-[opacity,scale] sm:duration-300 sm:group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
