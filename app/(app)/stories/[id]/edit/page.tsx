@@ -328,29 +328,57 @@ export default function StoryEditPage() {
                 {/* Left: slide strip */}
                 <div
                     className={cn(
-                        "border-border bg-muted/20 overflow-y-auto border-r p-2.5",
-                        "grid grid-cols-2 content-start gap-3 pb-4 sm:grid-cols-3 md:grid-cols-4",
-                        "lg:flex lg:w-[152px] lg:shrink-0 lg:flex-col lg:gap-3 lg:pb-4",
-                        mobileTab !== "slides" ? "hidden lg:flex lg:flex-col" : "w-full"
+                        "border-border bg-muted/20 flex flex-col overflow-y-auto border-r lg:w-[152px] lg:shrink-0",
+                        mobileTab !== "slides" ? "hidden lg:flex" : ""
                     )}
                 >
-                    {draft.slides.map((slide, i) => (
-                        <SlideThumb
-                            key={slide.tempId}
-                            slide={slide}
-                            index={i}
-                            active={i === activeIdx}
-                            onSelect={() => setActiveIdx(i)}
-                            onRemove={() => handleRemove(slide.tempId)}
-                        />
-                    ))}
-                    <button
-                        onClick={() => setPickerOpen(true)}
-                        className="border-border text-muted-foreground hover:border-primary/50 hover:text-primary flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed transition-colors lg:gap-1.5"
-                    >
-                        <Plus className="size-4 lg:size-5" />
-                        <span className="text-[9px] font-medium lg:text-[11px]">Add slides</span>
-                    </button>
+                    {/* Mobile: columns grid (matches all-photos layout) */}
+                    <div className="columns-2 gap-3 p-2.5 pb-3 sm:columns-3 md:columns-4 lg:hidden">
+                        {draft.slides.map((slide, i) => (
+                            <div key={slide.tempId} className="mb-3 break-inside-avoid">
+                                <SlideThumb
+                                    slide={slide}
+                                    index={i}
+                                    active={i === activeIdx}
+                                    onSelect={() => setActiveIdx(i)}
+                                    onRemove={() => handleRemove(slide.tempId)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Mobile: normal add button */}
+                    <div className="px-2.5 pb-4 lg:hidden">
+                        <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            onClick={() => setPickerOpen(true)}
+                        >
+                            <Plus className="size-4" />
+                            Add slides
+                        </Button>
+                    </div>
+
+                    {/* Desktop: vertical flex strip */}
+                    <div className="hidden flex-1 flex-col gap-3 p-2.5 pb-4 lg:flex">
+                        {draft.slides.map((slide, i) => (
+                            <SlideThumb
+                                key={slide.tempId}
+                                slide={slide}
+                                index={i}
+                                active={i === activeIdx}
+                                onSelect={() => setActiveIdx(i)}
+                                onRemove={() => handleRemove(slide.tempId)}
+                            />
+                        ))}
+                        <button
+                            onClick={() => setPickerOpen(true)}
+                            className="border-border text-muted-foreground hover:border-primary/50 hover:text-primary flex aspect-9/16 w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed transition-colors"
+                        >
+                            <Plus className="size-5" />
+                            <span className="text-[11px] font-medium">Add slides</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Center: large image view — desktop only */}
@@ -371,37 +399,41 @@ export default function StoryEditPage() {
                     )}
                 >
                     <div className="min-h-0 flex-1 overflow-y-auto p-5">
-                        {activeSlide ? (
-                            <SlideConfig
-                                slide={activeSlide}
-                                index={activeIdx}
-                                total={draft.slides.length}
-                                onChange={(patch) =>
-                                    dispatch({
-                                        type: "UPDATE_SLIDE",
-                                        tempId: activeSlide.tempId,
-                                        patch,
-                                    })
-                                }
-                                onRemove={() => handleRemove(activeSlide.tempId)}
-                            />
-                        ) : (
-                            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                                <ImageIcon className="text-muted-foreground/30 size-8" />
-                                <p className="text-muted-foreground text-sm">
-                                    Select a slide to configure it
-                                </p>
-                            </div>
-                        )}
+                        <div className="mx-auto max-w-md lg:max-w-none">
+                            {activeSlide ? (
+                                <SlideConfig
+                                    slide={activeSlide}
+                                    index={activeIdx}
+                                    total={draft.slides.length}
+                                    onChange={(patch) =>
+                                        dispatch({
+                                            type: "UPDATE_SLIDE",
+                                            tempId: activeSlide.tempId,
+                                            patch,
+                                        })
+                                    }
+                                    onRemove={() => handleRemove(activeSlide.tempId)}
+                                />
+                            ) : (
+                                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                                    <ImageIcon className="text-muted-foreground/30 size-8" />
+                                    <p className="text-muted-foreground text-sm">
+                                        Select a slide to configure it
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Story music section — always visible */}
                     <div className="border-border shrink-0 border-t p-5">
-                        <MusicSection
-                            selectedTrack={selectedTrack}
-                            onOpen={() => setMusicOpen(true)}
-                            onRemove={handleRemoveTrack}
-                        />
+                        <div className="mx-auto max-w-md lg:max-w-none">
+                            <MusicSection
+                                selectedTrack={selectedTrack}
+                                onOpen={() => setMusicOpen(true)}
+                                onRemove={handleRemoveTrack}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
