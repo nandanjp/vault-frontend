@@ -346,7 +346,7 @@ export default function StoryEditPage() {
                     ))}
                     <button
                         onClick={() => setPickerOpen(true)}
-                        className="border-border text-muted-foreground hover:border-primary/50 hover:text-primary flex aspect-[9/16] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed transition-colors lg:gap-1.5"
+                        className="border-border text-muted-foreground hover:border-primary/50 hover:text-primary flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed transition-colors lg:gap-1.5"
                     >
                         <Plus className="size-4 lg:size-5" />
                         <span className="text-[9px] font-medium lg:text-[11px]">Add slides</span>
@@ -532,14 +532,18 @@ function SlideThumb({
     onRemove: () => void
 }) {
     const src = displaySrc(slide)
+    const aspectStyle =
+        slide.width && slide.height ? { aspectRatio: `${slide.width}/${slide.height}` } : undefined
     return (
         <div
             className={cn(
-                "group relative aspect-[9/16] w-full cursor-pointer overflow-hidden rounded-xl border-2 transition-all",
+                "group relative w-full cursor-pointer overflow-hidden rounded-xl border-2 transition-all",
+                !aspectStyle && "aspect-square",
                 active
                     ? "border-primary shadow-primary/20 shadow-md"
                     : "hover:border-border border-transparent"
             )}
+            style={aspectStyle}
             onClick={onSelect}
         >
             {src ? (
