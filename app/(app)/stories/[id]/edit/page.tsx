@@ -332,18 +332,17 @@ export default function StoryEditPage() {
                         mobileTab !== "slides" ? "hidden lg:flex" : ""
                     )}
                 >
-                    {/* Mobile: columns grid (matches all-photos layout) */}
-                    <div className="columns-2 gap-3 p-2.5 pb-3 sm:columns-3 md:columns-4 lg:hidden">
+                    {/* Mobile: uniform grid */}
+                    <div className="grid grid-cols-2 gap-3 p-2.5 pb-3 sm:grid-cols-3 md:grid-cols-4 lg:hidden">
                         {draft.slides.map((slide, i) => (
-                            <div key={slide.tempId} className="mb-3 break-inside-avoid">
-                                <SlideThumb
-                                    slide={slide}
-                                    index={i}
-                                    active={i === activeIdx}
-                                    onSelect={() => setActiveIdx(i)}
-                                    onRemove={() => handleRemove(slide.tempId)}
-                                />
-                            </div>
+                            <SlideThumb
+                                key={slide.tempId}
+                                slide={slide}
+                                index={i}
+                                active={i === activeIdx}
+                                onSelect={() => setActiveIdx(i)}
+                                onRemove={() => handleRemove(slide.tempId)}
+                            />
                         ))}
                     </div>
 
@@ -564,18 +563,14 @@ function SlideThumb({
     onRemove: () => void
 }) {
     const src = displaySrc(slide)
-    const aspectStyle =
-        slide.width && slide.height ? { aspectRatio: `${slide.width}/${slide.height}` } : undefined
     return (
         <div
             className={cn(
-                "group relative w-full cursor-pointer overflow-hidden rounded-xl border-2 transition-all",
-                !aspectStyle && "aspect-square",
+                "group relative aspect-square w-full cursor-pointer overflow-hidden rounded-xl border-2 transition-all",
                 active
                     ? "border-primary shadow-primary/20 shadow-md"
                     : "hover:border-border border-transparent"
             )}
-            style={aspectStyle}
             onClick={onSelect}
         >
             {src ? (

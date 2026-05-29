@@ -250,13 +250,13 @@ export default function ImageDetailPage() {
                         {isLoading ? (
                             <Skeleton className="aspect-[4/3] w-full rounded-none" />
                         ) : image?.status === "ready" && glowSrc ? (
-                            <div className="flex min-h-96 items-center justify-center p-6">
+                            <div className="flex aspect-[4/3] items-center justify-center p-6">
                                 <VaultImage
                                     src={glowSrc}
                                     alt={image.filename}
                                     width={image.width ?? 1200}
                                     height={image.height ?? 900}
-                                    className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm transition-[opacity,filter] duration-300"
+                                    className="max-h-full w-auto rounded-lg object-contain shadow-sm transition-[opacity,filter] duration-300"
                                     style={{ filter: filterCss }}
                                     onLoad={() => setImgLoaded(true)}
                                     priority
