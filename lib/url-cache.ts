@@ -42,7 +42,13 @@ export function normalizeImage<T extends { id: string; url?: string; thumbnail_u
             _cache.set(img.id, { url: img.url, thumbnail_url: img.thumbnail_url, exp: incomingExp })
             return img
         }
-        return { ...img, url: cached.url, thumbnail_url: cached.thumbnail_url }
+        // Pick up thumbnail_url if it became available since we first cached this image
+        // (e.g. image was cached while still processing, thumbnail generated afterward).
+        const thumbnail_url = cached.thumbnail_url ?? img.thumbnail_url
+        if (thumbnail_url !== cached.thumbnail_url) {
+            _cache.set(img.id, { url: cached.url, thumbnail_url, exp: cached.exp })
+        }
+        return { ...img, url: cached.url, thumbnail_url }
     }
 
     // Cache is absent or nearly expired — latch onto the incoming URL.
