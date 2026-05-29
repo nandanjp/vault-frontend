@@ -328,7 +328,7 @@ export default function StoryEditPage() {
                 {/* Left: slide strip */}
                 <div
                     className={cn(
-                        "border-border bg-muted/20 flex flex-col overflow-y-auto border-r lg:w-[152px] lg:shrink-0",
+                        "border-border bg-muted/20 flex flex-1 flex-col overflow-y-auto border-r lg:flex-none lg:w-38",
                         mobileTab !== "slides" ? "hidden lg:flex" : ""
                     )}
                 >
@@ -394,7 +394,7 @@ export default function StoryEditPage() {
                 <div
                     className={cn(
                         "border-border flex flex-col border-l",
-                        "w-full lg:w-[272px] lg:shrink-0",
+                        "w-full lg:w-68 lg:shrink-0",
                         mobileTab !== "config" && "hidden lg:flex"
                     )}
                 >
@@ -961,17 +961,16 @@ function BuilderSkeleton() {
                 <Skeleton className="h-5 w-48" />
             </div>
             <div className="flex flex-1 overflow-hidden">
-                <div className="border-border bg-muted/20 w-[152px] space-y-2 border-r p-2.5">
+                <div className="border-border bg-muted/20 w-38 space-y-2 border-r p-2.5">
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton
                             key={i}
-                            className="w-full rounded-xl"
-                            style={{ aspectRatio: "9/16" }}
+                            className="aspect-[9/16] w-full rounded-xl"
                         />
                     ))}
                 </div>
                 <div className="flex-1 bg-zinc-950" />
-                <div className="border-border w-[272px] space-y-4 border-l p-5">
+                <div className="border-border w-68 space-y-4 border-l p-5">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-20 w-full" />

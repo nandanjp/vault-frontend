@@ -5,11 +5,11 @@ import { X, Music, ChevronLeft, ChevronRight, Pause, Play, ImageIcon } from "luc
 
 function MusicBars() {
     return (
-        <div className="flex shrink-0 items-end gap-[2px]" style={{ height: 12 }}>
+        <div className="flex h-3 shrink-0 items-end gap-0.5">
             {[3, 5, 4, 3].map((h, i) => (
                 <span
                     key={i}
-                    className="w-[2px] rounded-full bg-emerald-400"
+                    className="w-0.5 rounded-full bg-emerald-400"
                     style={{
                         height: h * 2,
                         animation: `musicBar 0.8s ease-in-out ${i * 0.12}s infinite alternate`,
@@ -217,8 +217,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
             <div className="relative z-10 flex flex-col items-center gap-3">
                 {/* Phone frame — 300×650 ≈ iPhone 16 aspect ratio (9:19.5) */}
                 <div
-                    className="relative overflow-hidden rounded-[42px] border-[5px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
-                    style={{ width: 300, height: 650 }}
+                    className="relative w-75 h-[650px] overflow-hidden rounded-[42px] border-[5px] border-zinc-800 bg-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.9)]"
                 >
                     {/* Notch */}
                     <div className="absolute top-3 left-1/2 z-30 h-[15px] w-20 -translate-x-1/2 rounded-full bg-zinc-800" />
@@ -353,7 +352,7 @@ export function StoryPlayer({ slides, initialIndex = 0, onClose, track }: StoryP
 
                 {/* Spotify embed — plays 30s preview for any track */}
                 {track && (
-                    <div className="overflow-hidden rounded-2xl shadow-xl" style={{ width: 300 }}>
+                    <div className="w-75 overflow-hidden rounded-2xl shadow-xl">
                         <iframe
                             key={track.id}
                             src={`https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0`}

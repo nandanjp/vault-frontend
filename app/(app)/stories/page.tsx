@@ -138,6 +138,13 @@ function StoryCard({ story }: { story: Story }) {
                         </div>
                     )}
 
+                    {/* Title gradient overlay */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 pt-8 pb-2">
+                        <p className="truncate pr-10 text-[11px] font-medium text-white/90">
+                            {story.title}
+                        </p>
+                    </div>
+
                     {/* Slide count badge */}
                     <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 backdrop-blur-sm">
                         <Play className="size-2.5 fill-white text-white" />
@@ -145,13 +152,6 @@ function StoryCard({ story }: { story: Story }) {
                             {story.slide_count}
                         </span>
                     </div>
-                </div>
-
-                <div className="p-3">
-                    <p className="truncate text-sm font-medium">{story.title}</p>
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                        {story.slide_count} {story.slide_count === 1 ? "slide" : "slides"}
-                    </p>
                 </div>
             </Link>
 
@@ -197,11 +197,7 @@ function StoryCard({ story }: { story: Story }) {
 function StorySkeleton() {
     return (
         <div className={cn("border-border bg-card overflow-hidden rounded-xl border")}>
-            <Skeleton className="w-full rounded-none" style={{ aspectRatio: "9/16" }} />
-            <div className="space-y-1.5 p-3">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/3" />
-            </div>
+            <Skeleton className="aspect-[9/16] w-full rounded-none" />
         </div>
     )
 }

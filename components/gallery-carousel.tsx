@@ -74,7 +74,7 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
     return (
         <div
             ref={containerRef}
-            className="relative h-[480px] w-full overflow-hidden rounded-2xl bg-black"
+            className="relative h-120 w-full overflow-hidden rounded-2xl bg-black"
         >
             {images.map((image, i) => {
                 const src = displaySrc(image)
@@ -84,17 +84,14 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
                         ref={(el) => {
                             slidesRef.current[i] = el
                         }}
-                        className="absolute inset-0"
+                        className={cn("absolute inset-0", i !== current && "pointer-events-none")}
                         style={{ opacity: i === 0 ? 1 : 0 }}
                     >
                         {/* Blurred background — decorative, hidden when no thumbnail available */}
                         {src && (
                             <div
-                                className="absolute inset-0 overflow-hidden"
-                                style={{
-                                    filter: "blur(28px) brightness(0.35) saturate(1.2)",
-                                    transform: "scale(1.1)",
-                                }}
+                                className="absolute inset-0 scale-110 overflow-hidden"
+                                style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)" }}
                             >
                                 <VaultImage
                                     src={src}

@@ -144,14 +144,14 @@ export function AlbumSlideshow({ images, initialIndex = 0, onClose }: AlbumSlide
                                     }}
                                     onClick={() => goTo(abs)}
                                     className={cn(
-                                        "shrink-0 rounded-xl border transition-all duration-150",
+                                        "shrink-0 rounded-lg border transition-all duration-150",
                                         "aspect-[4/3] h-14",
                                         isSelected
                                             ? "border-white/60 opacity-100 shadow-md ring-1 ring-white"
                                             : "border-white/10 bg-white/5 opacity-45 hover:border-white/25 hover:opacity-75"
                                     )}
                                 >
-                                    <div className="h-full w-full overflow-hidden rounded-[10px]">
+                                    <div className="h-full w-full overflow-hidden rounded-md">
                                         {src ? (
                                             <VaultImage
                                                 src={src}
@@ -243,11 +243,8 @@ function SlideshowCarousel({ images, current, onGoTo }: SlideshowCarouselProps) 
                         {/* Blurred background fill — decorative, hidden when no thumbnail available */}
                         {src && (
                             <div
-                                className="absolute inset-0 overflow-hidden"
-                                style={{
-                                    filter: "blur(28px) brightness(0.35) saturate(1.2)",
-                                    transform: "scale(1.1)",
-                                }}
+                                className="absolute inset-0 scale-110 overflow-hidden"
+                                style={{ filter: "blur(28px) brightness(0.35) saturate(1.2)" }}
                             >
                                 <VaultImage
                                     src={src}

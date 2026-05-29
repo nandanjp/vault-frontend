@@ -233,10 +233,9 @@ export default function ImageDetailPage() {
                     {glowSrc && (
                         <div
                             className={cn(
-                                "pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl blur-[60px] saturate-[2] transition-opacity duration-700",
+                                "pointer-events-none absolute inset-0 -z-10 scale-[115%] overflow-hidden rounded-2xl blur-[60px] saturate-200 transition-opacity duration-700",
                                 imgLoaded ? "opacity-[0.22]" : "opacity-0"
                             )}
-                            style={{ transform: "scale(1.15)" }}
                         >
                             <VaultImage
                                 src={glowSrc}
@@ -257,7 +256,7 @@ export default function ImageDetailPage() {
                                     alt={image.filename}
                                     width={image.width ?? 1200}
                                     height={image.height ?? 900}
-                                    className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm transition-[filter] duration-300"
+                                    className="max-h-[72vh] w-auto rounded-lg object-contain shadow-sm transition-[opacity,filter] duration-300"
                                     style={{ filter: filterCss }}
                                     onLoad={() => setImgLoaded(true)}
                                     priority

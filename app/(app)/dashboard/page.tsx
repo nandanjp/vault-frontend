@@ -29,7 +29,7 @@ export default function DashboardPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6">
             {/* Gallery carousel */}
-            {galleryLoading && <Skeleton className="h-[480px] w-full rounded-2xl" />}
+            {galleryLoading && <Skeleton className="h-120 w-full rounded-2xl" />}
             {hasGallery && <GalleryCarousel images={gallery!} />}
 
             {/* Favourites strip */}
